@@ -5,183 +5,206 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   ArrowRight,
-  BadgeCheck,
   BriefcaseBusiness,
-  CheckCircle2,
   ChefHat,
+  CheckCircle2,
   Code2,
   Coins,
+  Eye,
   Fingerprint,
   GraduationCap,
   HeartHandshake,
   LayoutTemplate,
-  MessageCircle,
   Palette,
   RefreshCcw,
   Scale,
   Send,
   Sparkles,
-  Target,
   Trophy,
-  UserRoundCheck,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type GoalId = "orders" | "job" | "portfolio" | "confidence";
-type SkillId = "programming" | "design" | "cooking" | "teaching" | "psychology" | "law";
-type Step = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+type GoalId = "orders" | "job" | "portfolio" | "levelup";
+type TrackId = "programming" | "design" | "cooking" | "teaching" | "psychology" | "law";
+type Step = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 type MentorDecision = "improve" | "ignore" | null;
 
 type Goal = {
   id: GoalId;
   title: string;
-  description: string;
-  icon: LucideIcon;
+  short: string;
   reaction: string;
   opportunity: string;
+  icon: LucideIcon;
 };
 
-type SkillTrack = {
-  id: SkillId;
+type Track = {
+  id: TrackId;
   title: string;
-  description: string;
+  short: string;
   icon: LucideIcon;
+  riddle: string;
+  riddleOptions: string[];
+  riddleAnswer: number;
+  riddleMeme: string;
   situation: string;
   actions: string[];
-  correct: number[];
+  correctActions: number[];
   mentorFix: string;
-  reaction: string;
+  skillMeme: string;
   caseName: string;
 };
 
 type Scores = {
   trust: number;
   quality: number;
-  opportunity: number;
+  chance: number;
 };
 
-const questPath = ["Цель", "Навык", "Миссия", "Рынок", "Правка", "Кейс", "Skill ID", "Возможность"];
+const pathItems = ["Навык", "Загадка", "Миссия", "Правка", "Кейс", "Skill ID", "Возможность"];
 
 const goals: Goal[] = [
   {
     id: "orders",
     title: "Зарабатывать на заказах",
-    description: "Показать результат, чтобы тебе могли доверить работу",
-    icon: Coins,
+    short: "Навык должен быть понятен заказчику",
     reaction: "POV: ты понял, что навык может приносить деньги, если его можно доказать.",
     opportunity: "заказ",
+    icon: Coins,
   },
   {
     id: "job",
     title: "Попасть на работу",
-    description: "Принести не обещания, а понятный кейс",
-    icon: BriefcaseBusiness,
-    reaction: "Работодатель не экстрасенс. Ему нужен результат, а не «я быстро учусь».",
+    short: "Работодателю нужен результат",
+    reaction: "Работодатель не экстрасенс. Ему нужен результат.",
     opportunity: "работа",
+    icon: BriefcaseBusiness,
   },
   {
     id: "portfolio",
     title: "Собрать портфолио",
-    description: "Начать с первого доказанного результата",
-    icon: Palette,
-    reaction: "Портфолио само себя не соберёт. Пора открывать первый кейс.",
+    short: "Первый кейс запускает движение",
+    reaction: "Портфолио само себя не соберёт. Открываем первый кейс.",
     opportunity: "портфолио",
+    icon: Palette,
   },
   {
-    id: "confidence",
-    title: "Прокачаться и стать увереннее",
-    description: "Понять, что ты уже можешь сделать руками",
-    icon: Trophy,
-    reaction: "Прокачка без практики — это как спортзал по видео. Вроде понял, но форму не набрал.",
+    id: "levelup",
+    title: "Прокачаться",
+    short: "Практика даёт уверенность",
+    reaction: "Теория без практики — это как спортзал только в TikTok.",
     opportunity: "рост",
+    icon: Trophy,
   },
 ];
 
-const tracks: SkillTrack[] = [
+const tracks: Track[] = [
   {
     id: "programming",
     title: "Программирование",
-    description: "сайты, боты, автоматизация, приложения",
+    short: "код, сайты, боты, автоматизация",
     icon: Code2,
-    situation: "Малому бизнесу нужна простая страница заявки. Что сделает работу похожей на реальный кейс?",
-    actions: [
-      "Сделать красивый фон и забыть про форму",
-      "Добавить понятную форму заявки",
-      "Проверить, что кнопка работает",
-      "Оставить страницу без адаптива",
-    ],
-    correct: [1, 2],
-    mentorFix: "Добавь проверку формы и покажи, что пользователь реально может оставить заявку.",
-    reaction: "Код есть. Теперь бы ещё показать, что он реально работает.",
+    riddle:
+      "Я не виден, пока всё работает. Но если меня нет — пользователь злится, кнопка молчит, форма грустит. Кто я?",
+    riddleOptions: ["Красивый фон", "Проверка работы функции", "Название проекта"],
+    riddleAnswer: 1,
+    riddleMeme: "Кнопка нажалась. Пользователь не плачет. Уже успех.",
+    situation: "Малому бизнесу нужна страница заявки.",
+    actions: ["Добавить понятную форму", "Проверить, что кнопка работает", "Сделать только красивый фон", "Забыть про мобильную версию"],
+    correctActions: [0, 1],
+    mentorFix: "Добавь проверку формы и покажи, что заявка реально отправляется.",
+    skillMeme: "Код есть. Теперь бы ещё показать, что он реально работает.",
     caseName: "Страница заявки для бизнеса",
   },
   {
     id: "design",
     title: "Дизайн",
-    description: "интерфейсы, визуал, карточки, презентации",
+    short: "визуал, интерфейсы, презентации",
     icon: LayoutTemplate,
-    situation: "Клиенту нужен первый экран сайта. Что повысит доверие?",
-    actions: ["Понятный заголовок", "Много случайных эффектов", "Видимая кнопка действия", "Мелкий текст на весь экран"],
-    correct: [0, 2],
+    riddle:
+      "Я не украшение, но без меня человек не понимает, куда смотреть. Я веду взгляд и спасаю слайд от хаоса. Кто я?",
+    riddleOptions: ["Визуальная иерархия", "Случайный градиент", "17 шрифтов сразу"],
+    riddleAnswer: 0,
+    riddleMeme: "17 шрифтов покинули чат.",
+    situation: "Клиенту нужен первый экран сайта.",
+    actions: ["Понятный заголовок", "Видимая кнопка действия", "Много случайных эффектов", "Мелкий текст на весь экран"],
+    correctActions: [0, 1],
     mentorFix: "Убери лишние эффекты. Сделай заголовок, пользу и кнопку главным фокусом.",
-    reaction: "Красиво — хорошо. Понятно и полезно — уже кейс.",
+    skillMeme: "Красиво — хорошо. Понятно и полезно — уже кейс.",
     caseName: "Первый экран сайта",
   },
   {
     id: "cooking",
     title: "Поварское дело",
-    description: "блюда, подача, меню, технология приготовления",
+    short: "блюда, подача, меню, технология",
     icon: ChefHat,
-    situation: "Кафе просит придумать блюдо для меню. Что сделает это кейсом?",
-    actions: ["Описать состав и технологию", "Просто написать «вкусно»", "Продумать подачу блюда", "Не считать время приготовления"],
-    correct: [0, 2],
+    riddle:
+      "Меня нельзя просто назвать «вкусно». Меня можно повторить, оценить и показать. Я превращаю блюдо в кейс. Кто я?",
+    riddleOptions: ["Технология приготовления", "Настроение повара", "Красивое слово «авторское»"],
+    riddleAnswer: 0,
+    riddleMeme: "«Вкусно» — это эмоция. Технология — это уже доказательство.",
+    situation: "Кафе просит блюдо для меню.",
+    actions: ["Описать состав", "Продумать подачу", "Просто написать «вкусно»", "Не считать время приготовления"],
+    correctActions: [0, 1],
     mentorFix: "Опиши технологию и подачу так, чтобы блюдо можно было повторить и оценить.",
-    reaction: "Вкусно на словах не считается. Нужна технология, подача и результат.",
+    skillMeme: "Вкусно на словах не считается. Нужна технология, подача и результат.",
     caseName: "Блюдо для меню кафе",
   },
   {
     id: "teaching",
     title: "Педагогика",
-    description: "объяснение темы, уроки, работа с учениками",
+    short: "объяснение, уроки, работа с учениками",
     icon: GraduationCap,
-    situation: "Тебе нужно объяснить сложную тему новичку. Что покажет твой навык?",
-    actions: ["Объяснить простыми словами", "Дать пример из жизни", "Сразу завалить терминами", "Не проверять, понял ли ученик"],
-    correct: [0, 1],
+    riddle: "Если ученик кивнул, это ещё не значит, что понял. Что помогает проверить реальный результат?",
+    riddleOptions: ["Вопрос или мини-задание", "Ещё больше терминов", "Сказать «ну это же очевидно»"],
+    riddleAnswer: 0,
+    riddleMeme: "Ученик кивнул. Опасный момент.",
+    situation: "Нужно объяснить сложную тему новичку.",
+    actions: ["Объяснить простыми словами", "Дать пример из жизни", "Завалить терминами", "Не проверять понимание"],
+    correctActions: [0, 1],
     mentorFix: "Добавь пример и вопрос для проверки понимания.",
-    reaction: "Объяснить так, чтобы поняли — это тоже сильный навык.",
+    skillMeme: "Объяснить так, чтобы поняли — это тоже сильный навык.",
     caseName: "Мини-урок для новичка",
   },
   {
     id: "psychology",
     title: "Психология",
-    description: "коммуникация, поддержка, разбор ситуации, этика",
+    short: "коммуникация, поддержка, этика",
     icon: HeartHandshake,
-    situation: "Человек описал трудную ситуацию. Что важно сделать правильно?",
-    actions: ["Выслушать и уточнить запрос", "Сразу поставить диагноз", "Соблюдать этику и границы", "Давить своим мнением"],
-    correct: [0, 2],
-    mentorFix: "Не оценивай человека. Сначала уточни запрос и сохрани безопасные границы общения.",
-    reaction: "Слушать, уточнять и не давить — база профессионального общения.",
+    riddle:
+      "Я помогаю не лезть с советами сразу, а сначала понять человека. Без меня разговор превращается в «сейчас я всё решу за тебя». Кто я?",
+    riddleOptions: ["Уточнение запроса", "Давление мнением", "Диагноз за 5 секунд"],
+    riddleAnswer: 0,
+    riddleMeme: "Диагноз за 5 секунд — бан. Уточнение запроса — база.",
+    situation: "Человек описал трудную ситуацию.",
+    actions: ["Выслушать и уточнить запрос", "Соблюдать границы", "Сразу поставить диагноз", "Давить своим мнением"],
+    correctActions: [0, 1],
+    mentorFix: "Сначала уточни запрос и сохрани границы общения.",
+    skillMeme: "Слушать, уточнять и не давить — база профессионального общения.",
     caseName: "Учебный разбор запроса",
   },
   {
     id: "law",
     title: "Юриспруденция",
-    description: "правовая логика, документы, защита позиции",
+    short: "факты, документы, правовая логика",
     icon: Scale,
-    situation: "Человеку нужно понять, как защитить свою позицию. Что показывает правовой навык?",
-    actions: ["Выяснить факты ситуации", "Сразу обещать победу", "Найти норму или основание", "Игнорировать документы"],
-    correct: [0, 2],
-    mentorFix: "Сначала факты и документы, потом правовое основание. Без обещаний результата.",
-    reaction: "Правовая позиция без фактов — это просто уверенный монолог.",
+    riddle:
+      "Без меня правовая позиция звучит уверенно, но пусто. Я отвечаю на вопрос: «На чём основано?» Кто я?",
+    riddleOptions: ["Факт и правовое основание", "Громкий голос", "Обещание победы"],
+    riddleAnswer: 0,
+    riddleMeme: "Обещать победу легко. Доказать позицию сложнее.",
+    situation: "Человеку нужно понять, как защитить позицию.",
+    actions: ["Выяснить факты", "Найти основание", "Сразу обещать победу", "Игнорировать документы"],
+    correctActions: [0, 1],
+    mentorFix: "Сначала факты и документы, потом основание. Без обещаний результата.",
+    skillMeme: "Правовая позиция без фактов — это просто уверенный монолог.",
     caseName: "Логика правовой позиции",
   },
 ];
 
 function vibrate(pattern: number | number[]) {
-  if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-    navigator.vibrate(pattern);
-  }
+  if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(pattern);
 }
 
 function getMissionScore(selected: number[], correct: number[]) {
@@ -191,68 +214,60 @@ function getMissionScore(selected: number[], correct: number[]) {
   return "weak";
 }
 
-function scoresFor(missionScore: ReturnType<typeof getMissionScore>, mentorDecision: MentorDecision): Scores {
-  const base =
+function calculateScores(riddleCorrect: boolean, missionScore: ReturnType<typeof getMissionScore>, decision: MentorDecision): Scores {
+  const riddle = riddleCorrect ? 20 : 0;
+  const mission =
     missionScore === "strong"
-      ? { trust: 30, quality: 30, opportunity: 20 }
+      ? { trust: 30, quality: 30, chance: 20 }
       : missionScore === "medium"
-        ? { trust: 15, quality: 18, opportunity: 12 }
-        : { trust: 5, quality: 8, opportunity: 6 };
-
-  if (mentorDecision === "improve") {
-    return {
-      trust: Math.min(100, base.trust + 40 + (missionScore === "strong" ? 30 : missionScore === "medium" ? 25 : 20)),
-      quality: Math.min(100, base.quality + 40 + (missionScore === "strong" ? 30 : missionScore === "medium" ? 22 : 18)),
-      opportunity: Math.min(100, base.opportunity + 20 + (missionScore === "strong" ? 60 : missionScore === "medium" ? 48 : 42)),
-    };
-  }
-
+        ? { trust: 15, quality: 15, chance: 10 }
+        : { trust: 5, quality: 5, chance: 5 };
+  const mentor = decision === "improve" ? { trust: 40, quality: 40, chance: 20 } : { trust: 0, quality: 0, chance: 10 };
   return {
-    trust: Math.min(100, base.trust + (missionScore === "strong" ? 40 : missionScore === "medium" ? 35 : 30)),
-    quality: Math.min(100, base.quality + (missionScore === "strong" ? 35 : missionScore === "medium" ? 28 : 22)),
-    opportunity: Math.min(100, base.opportunity + 10 + (missionScore === "strong" ? 40 : missionScore === "medium" ? 30 : 24)),
+    trust: Math.min(100, riddle + mission.trust + mentor.trust + 10),
+    quality: Math.min(100, mission.quality + mentor.quality + (riddleCorrect ? 10 : 0) + 15),
+    chance: Math.min(100, mission.chance + mentor.chance + (decision === "improve" ? 35 : 25)),
   };
 }
 
-function getMarketReaction(score: ReturnType<typeof getMissionScore>) {
+function marketCopy(score: ReturnType<typeof getMissionScore>) {
   if (score === "strong") {
     return {
-      title: "Рынок: «Окей, тут уже есть за что зацепиться» 👀",
-      subtitle: "Наставник: «База есть. Сейчас сделаем из этого кейс.»",
+      main: "Заказчик: «О, тут человек не просто говорил» 👀",
+      mentor: "Наставник: «База есть. Сейчас сделаем кейс.»",
+      employer: "Работодатель: «Можно смотреть результат.»",
       badge: "Навык пошёл в дело",
-      result: "Сильно. Это уже похоже на работу, которую можно показать.",
     };
   }
   if (score === "medium") {
     return {
-      title: "Заказчик: «Идея есть, но надо докрутить»",
-      subtitle: "SkillBarter: «Для этого и существуют правки.»",
+      main: "Наставник: «Материал есть, сейчас докрутим.»",
+      mentor: "SkillBarter: «Для этого и есть правки.»",
+      employer: "Работодатель: «Идея есть, но мало доказательств.»",
       badge: "Кейс почти готов",
-      result: "Неплохо. Но кейс станет сильнее после правки наставника.",
     };
   }
   return {
-    title: "Рынок: «Пока неубедительно»",
-    subtitle: "Наставник: «Не страшно. Сейчас усилим результат.»",
-    badge: "Теперь нужен апгрейд",
-    result: "Не провал. В реальной работе правки — часть роста.",
+    main: "Рынок: «Пока сыровато.»",
+    mentor: "SkillBarter: «Спокойно. Для этого и есть наставник.»",
+    employer: "Заказчик: «Покажите результат — тогда поговорим.»",
+    badge: "Нужен апгрейд",
   };
 }
 
-function finalReaction(scores: Scores) {
-  if (scores.trust >= 95) return ["Работодатель: «Так, это уже интересно.»", "Заказчик: «Можно посмотреть подробнее?»"];
-  if (scores.trust >= 80) return ["Хороший старт.", "Ещё пару кейсов — и профиль будет выглядеть мощно."];
-  return ["Первый кейс есть.", "Теперь главное — не остановиться."];
+function finalMeme(scores: Scores) {
+  if (scores.trust >= 90) return "Работодатель: «Так, это уже интересно.»";
+  if (scores.trust >= 70) return "Хороший старт. Ещё пару кейсов — и профиль будет мощнее.";
+  return "Первый кейс есть. Теперь главное — не остановиться.";
 }
 
 function QuestProgress({ step }: { step: Step }) {
-  const percent = Math.round(((step + 1) / 8) * 100);
-
+  const percent = Math.round(((step + 1) / 9) * 100);
   return (
     <div className="sticky top-0 z-30 border-b border-[rgba(168,85,247,0.16)] bg-[rgba(3,0,20,0.86)] px-4 py-3 backdrop-blur-xl">
       <div className="mx-auto flex max-w-4xl items-center gap-3">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[rgba(168,85,247,0.32)] bg-[rgba(123,44,255,0.16)] text-sm font-bold">
-          {step + 1}/8
+          {step + 1}/9
         </div>
         <div className="min-w-0 flex-1">
           <div className="mb-2 flex items-center justify-between text-[11px] uppercase tracking-[0.16em] text-[#AFA8C8]">
@@ -263,7 +278,7 @@ function QuestProgress({ step }: { step: Step }) {
             <motion.div
               animate={{ width: `${percent}%` }}
               transition={{ duration: 0.45, ease: "easeOut" }}
-              className="h-full rounded-full bg-gradient-to-r from-[#7B2CFF] via-[#C084FC] to-[#22C55E] shadow-[0_0_20px_rgba(168,85,247,0.6)]"
+              className="h-full rounded-full bg-gradient-to-r from-[#7B2CFF] via-[#C084FC] to-[#22C55E]"
             />
           </div>
         </div>
@@ -290,16 +305,37 @@ function QuestShell({ children, className }: { children: React.ReactNode; classN
   );
 }
 
-function MemeCard({ children, icon: Icon = Sparkles }: { children: React.ReactNode; icon?: LucideIcon }) {
+function StickerCard({
+  face,
+  title,
+  text,
+  tone = "violet",
+}: {
+  face: string;
+  title: string;
+  text: string;
+  tone?: "violet" | "green" | "amber";
+}) {
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+      initial={{ opacity: 0, scale: 0.94, y: 10 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
-      className="rounded-2xl border border-[rgba(168,85,247,0.2)] bg-[rgba(255,255,255,0.045)] p-4 text-sm leading-6 text-[#EDE9FE]"
+      transition={{ type: "spring", stiffness: 260, damping: 20 }}
+      className={cn(
+        "relative overflow-hidden rounded-[1.5rem] border p-4",
+        tone === "green" && "border-[rgba(34,197,94,0.28)] bg-[rgba(34,197,94,0.1)]",
+        tone === "amber" && "border-[rgba(245,158,11,0.3)] bg-[rgba(245,158,11,0.1)]",
+        tone === "violet" && "border-[rgba(168,85,247,0.22)] bg-[rgba(255,255,255,0.045)]",
+      )}
     >
-      <div className="flex items-start gap-3">
-        <Icon className="mt-0.5 h-5 w-5 shrink-0 text-[#C084FC]" />
-        <div className="break-words">{children}</div>
+      <div className="flex items-center gap-3">
+        <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl border border-[rgba(255,255,255,0.12)] bg-[rgba(123,44,255,0.18)] text-3xl shadow-[0_0_24px_rgba(123,44,255,0.25)]">
+          {face}
+        </div>
+        <div>
+          <p className="font-semibold">{title}</p>
+          <p className="mt-1 text-sm leading-5 text-[#AFA8C8]">{text}</p>
+        </div>
       </div>
     </motion.div>
   );
@@ -312,17 +348,11 @@ function PathLights({ active }: { active: number }) {
         <div className="absolute left-5 right-5 top-5 h-px bg-[rgba(168,85,247,0.2)]" />
         <motion.div
           className="absolute left-5 top-5 h-px bg-gradient-to-r from-[#7B2CFF] to-[#22C55E]"
-          animate={{ width: `${Math.min(100, (active / (questPath.length - 1)) * 100)}%` }}
+          animate={{ width: `${Math.min(100, (active / (pathItems.length - 1)) * 100)}%` }}
           transition={{ duration: 0.6, ease: "easeOut" }}
         />
-        {questPath.map((item, index) => (
-          <motion.div
-            key={item}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-            className="relative flex w-12 flex-col items-center gap-2 sm:w-20"
-          >
+        {pathItems.map((item, index) => (
+          <motion.div key={item} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }} className="relative flex w-12 flex-col items-center gap-2 sm:w-20">
             <span
               className={cn(
                 "flex h-10 w-10 items-center justify-center rounded-full border text-xs font-bold",
@@ -341,13 +371,12 @@ function PathLights({ active }: { active: number }) {
   );
 }
 
-function ScorePills({ scores }: { scores: Scores }) {
+function ScoreBars({ scores }: { scores: Scores }) {
   const items = [
     ["Доверие", scores.trust],
     ["Качество кейса", scores.quality],
-    ["Шанс", scores.opportunity],
+    ["Шанс", scores.chance],
   ] as const;
-
   return (
     <div className="grid gap-3 sm:grid-cols-3">
       {items.map(([label, value]) => (
@@ -370,19 +399,15 @@ function ScorePills({ scores }: { scores: Scores }) {
   );
 }
 
-function MentorChat({ track, done }: { track: SkillTrack; done: boolean }) {
+function MentorChat({ track, done }: { track: Track; done: boolean }) {
   return (
     <div className="rounded-[1.5rem] border border-[rgba(168,85,247,0.18)] bg-[rgba(255,255,255,0.04)] p-4">
       <div className="flex items-center gap-3">
-        <motion.div
-          initial={{ scale: 0.84 }}
-          animate={{ scale: 1 }}
-          className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7B2CFF] to-[#C084FC] font-bold shadow-[0_0_28px_rgba(123,44,255,0.45)]"
-        >
-          М
-        </motion.div>
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7B2CFF] to-[#C084FC] text-2xl shadow-[0_0_28px_rgba(123,44,255,0.45)]">
+          🧠
+        </div>
         <div>
-          <p className="font-semibold">Наставник SkillBarter</p>
+          <p className="font-semibold">Наставник в чате</p>
           <p className="text-sm text-[#AFA8C8]">{done ? "Правка получена" : "печатает..."}</p>
         </div>
       </div>
@@ -393,16 +418,25 @@ function MentorChat({ track, done }: { track: SkillTrack; done: boolean }) {
   );
 }
 
-function ResultCard({ goal, track, scores }: { goal: Goal; track: SkillTrack; scores: Scores }) {
-  const reaction = finalReaction(scores);
-
+function Confetti() {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 18, rotateX: 8 }}
-      animate={{ opacity: 1, y: 0, rotateX: 0 }}
-      transition={{ duration: 0.45, ease: "easeOut" }}
-      className="relative overflow-hidden rounded-[2rem] border border-[rgba(192,132,252,0.36)] bg-[linear-gradient(150deg,rgba(35,18,74,0.96),rgba(8,5,28,0.94))] p-5 shadow-[0_0_44px_rgba(123,44,255,0.28)]"
-    >
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      {Array.from({ length: 18 }).map((_, index) => (
+        <motion.span
+          key={index}
+          className="absolute left-1/2 top-24 h-1.5 w-1.5 rounded-full bg-[#C084FC]"
+          initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
+          animate={{ x: Math.cos(index * 0.9) * (80 + index * 4), y: Math.sin(index * 1.7) * (60 + index * 3), opacity: 0, scale: 0.35 }}
+          transition={{ duration: 0.9, delay: 0.08, ease: "easeOut" }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function SkillIdCard({ goal, track, scores }: { goal: Goal; track: Track; scores: Scores }) {
+  return (
+    <div className="relative overflow-hidden rounded-[2rem] border border-[rgba(192,132,252,0.36)] bg-[linear-gradient(150deg,rgba(35,18,74,0.96),rgba(8,5,28,0.94))] p-5 shadow-[0_0_44px_rgba(123,44,255,0.28)]">
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#E9D5FF] to-transparent" />
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -413,7 +447,6 @@ function ResultCard({ goal, track, scores }: { goal: Goal; track: SkillTrack; sc
           <Fingerprint className="h-6 w-6" />
         </div>
       </div>
-
       <div className="mt-6 grid gap-3">
         {[
           ["Цель", goal.title],
@@ -429,32 +462,6 @@ function ResultCard({ goal, track, scores }: { goal: Goal; track: SkillTrack; sc
           </div>
         ))}
       </div>
-
-      <div className="mt-5 rounded-2xl border border-[rgba(34,197,94,0.22)] bg-[rgba(34,197,94,0.09)] p-4 text-sm leading-6 text-[#DCFCE7]">
-        <p>{reaction[0]}</p>
-        <p>{reaction[1]}</p>
-      </div>
-    </motion.div>
-  );
-}
-
-function Confetti() {
-  return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      {Array.from({ length: 18 }).map((_, index) => (
-        <motion.span
-          key={index}
-          className="absolute left-1/2 top-24 h-1.5 w-1.5 rounded-full bg-[#C084FC]"
-          initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
-          animate={{
-            x: Math.cos(index * 0.9) * (80 + index * 4),
-            y: Math.sin(index * 1.7) * (60 + index * 3),
-            opacity: 0,
-            scale: 0.35,
-          }}
-          transition={{ duration: 0.9, delay: 0.08, ease: "easeOut" }}
-        />
-      ))}
     </div>
   );
 }
@@ -463,7 +470,8 @@ export default function EventQuestPage() {
   const reduceMotion = useReducedMotion();
   const [step, setStep] = useState<Step>(0);
   const [goalId, setGoalId] = useState<GoalId | null>(null);
-  const [trackId, setTrackId] = useState<SkillId | null>(null);
+  const [trackId, setTrackId] = useState<TrackId | null>(null);
+  const [riddleAnswer, setRiddleAnswer] = useState<number | null>(null);
   const [selectedActions, setSelectedActions] = useState<number[]>([]);
   const [missionChecked, setMissionChecked] = useState(false);
   const [typingDone, setTypingDone] = useState(false);
@@ -472,12 +480,13 @@ export default function EventQuestPage() {
 
   const goal = useMemo(() => goals.find((item) => item.id === goalId) ?? goals[0], [goalId]);
   const track = useMemo(() => tracks.find((item) => item.id === trackId) ?? tracks[0], [trackId]);
-  const missionScore = getMissionScore(selectedActions, track.correct);
-  const market = getMarketReaction(missionScore);
-  const scores = scoresFor(missionScore, mentorDecision);
+  const riddleCorrect = riddleAnswer === track.riddleAnswer;
+  const missionScore = getMissionScore(selectedActions, track.correctActions);
+  const scores = calculateScores(riddleCorrect, missionScore, mentorDecision);
+  const market = marketCopy(missionScore);
 
   useEffect(() => {
-    if (step !== 5) return;
+    if (step !== 6) return;
     setTypingDone(false);
     const id = window.setTimeout(() => setTypingDone(true), 900);
     return () => window.clearTimeout(id);
@@ -493,6 +502,7 @@ export default function EventQuestPage() {
     setStep(0);
     setGoalId(null);
     setTrackId(null);
+    setRiddleAnswer(null);
     setSelectedActions([]);
     setMissionChecked(false);
     setTypingDone(false);
@@ -513,11 +523,8 @@ export default function EventQuestPage() {
   const shareQuest = async () => {
     const url = "https://skillbarter-mvp-bh44.vercel.app/event";
     try {
-      if (navigator.share) {
-        await navigator.share({ title: "Skill ID Quest", text: "Преврати навык в возможность", url });
-      } else if (navigator.clipboard) {
-        await navigator.clipboard.writeText(url);
-      }
+      if (navigator.share) await navigator.share({ title: "Skill ID Quest", text: "Докажи навык в мини-квесте", url });
+      else if (navigator.clipboard) await navigator.clipboard.writeText(url);
       setShared(true);
       vibrate(20);
     } catch {
@@ -549,32 +556,23 @@ export default function EventQuestPage() {
         <AnimatePresence mode="wait">
           {step === 0 && (
             <QuestShell key="intro" className="my-auto text-center">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-[#7B2CFF] shadow-[0_0_42px_rgba(123,44,255,0.62)]"
-              >
+              <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-[#7B2CFF] shadow-[0_0_42px_rgba(123,44,255,0.62)]">
                 <Fingerprint className="h-8 w-8" />
-              </motion.div>
-              <p className="mt-6 text-xs uppercase tracking-[0.24em] text-[#C4B5FD]">Skill ID Quest: преврати навык в возможность</p>
-              <motion.h1
-                initial={{ opacity: 0, y: 18, clipPath: "inset(0 0 100% 0)" }}
-                animate={{ opacity: 1, y: 0, clipPath: "inset(0 0 0% 0)" }}
-                transition={{ duration: 0.65, ease: "easeOut" }}
-                className="mt-4 text-4xl font-bold leading-tight tracking-tight sm:text-6xl"
-              >
+              </div>
+              <p className="mt-6 text-xs uppercase tracking-[0.24em] text-[#C4B5FD]">Skill ID Quest</p>
+              <h1 className="mt-4 text-4xl font-bold leading-tight tracking-tight sm:text-6xl">
                 Ты умеешь.
                 <br />
                 Но кто это увидит?
-              </motion.h1>
+              </h1>
               <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-[#B8B0D9]">
                 Пройди Skill ID Quest и преврати навык в кейс, который можно показать заказчику, наставнику или работодателю.
               </p>
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                <MemeCard icon={MessageCircle}>😐 «Я умею» без кейса: ну… допустим</MemeCard>
-                <MemeCard icon={Sparkles}>👀 Кейс в Skill ID: о, это уже можно посмотреть</MemeCard>
+                <StickerCard face="😐" title="Я умею" text="рынок: ну допустим" tone="amber" />
+                <StickerCard face="👀" title="Вот мой кейс в Skill ID" text="рынок: о, это уже интересно" tone="green" />
               </div>
-              <PathLights active={7} />
+              <PathLights active={6} />
               <button type="button" onClick={() => go(1)} className="btn-primary mt-9 w-full gap-2 py-4 text-base sm:w-auto sm:px-8">
                 Начать квест
                 <ArrowRight className="h-5 w-5" />
@@ -594,7 +592,7 @@ export default function EventQuestPage() {
                     <motion.button
                       key={item.id}
                       type="button"
-                      initial={{ opacity: 0, y: 14 }}
+                      initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0, scale: selected ? 1.03 : goalId ? 0.98 : 1 }}
                       transition={{ delay: index * 0.04 }}
                       whileTap={{ scale: 0.96 }}
@@ -610,21 +608,21 @@ export default function EventQuestPage() {
                       )}
                     >
                       <div className="flex items-start gap-3">
-                        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[rgba(123,44,255,0.18)] text-[#E9D5FF]">
+                        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[rgba(123,44,255,0.18)] text-[#E9D5FF]">
                           <Icon className="h-6 w-6" />
                         </span>
                         <span>
                           <span className="block text-lg font-semibold">{item.title}</span>
-                          <span className="mt-1 block text-sm leading-5 text-[#AFA8C8]">{item.description}</span>
+                          <span className="mt-1 block text-sm leading-5 text-[#AFA8C8]">{item.short}</span>
                         </span>
                       </div>
                     </motion.button>
                   );
                 })}
               </div>
-              {goalId && <MemeCard icon={Target}>{goal.reaction}</MemeCard>}
+              {goalId && <StickerCard face="💡" title="Окей, цель есть" text={goal.reaction} />}
               <button type="button" disabled={!goalId} onClick={() => go(2)} className="btn-primary mt-6 w-full gap-2 py-4 disabled:cursor-not-allowed disabled:opacity-45">
-                Выбрать сферу
+                Выбрать профессию
                 <ArrowRight className="h-5 w-5" />
               </button>
             </QuestShell>
@@ -632,8 +630,8 @@ export default function EventQuestPage() {
 
           {step === 2 && (
             <QuestShell key="track">
-              <p className="text-xs uppercase tracking-[0.22em] text-[#C4B5FD]">Навык</p>
-              <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-5xl">В какой сфере ты хочешь доказать себя?</h1>
+              <p className="text-xs uppercase tracking-[0.22em] text-[#C4B5FD]">Профессия</p>
+              <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-5xl">В какой сфере докажешь себя?</h1>
               <div className="mt-7 grid gap-3 sm:grid-cols-2">
                 {tracks.map((item, index) => {
                   const Icon = item.icon;
@@ -642,7 +640,7 @@ export default function EventQuestPage() {
                     <motion.button
                       key={item.id}
                       type="button"
-                      initial={{ opacity: 0, y: 14 }}
+                      initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0, scale: selected ? 1.03 : trackId ? 0.98 : 1 }}
                       transition={{ delay: index * 0.035 }}
                       whileTap={{ scale: 0.96 }}
@@ -658,45 +656,93 @@ export default function EventQuestPage() {
                       )}
                     >
                       <div className="flex items-start gap-3">
-                        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[rgba(123,44,255,0.18)] text-[#E9D5FF]">
+                        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[rgba(123,44,255,0.18)] text-[#E9D5FF]">
                           <Icon className="h-6 w-6" />
                         </span>
                         <span>
                           <span className="block text-lg font-semibold">{item.title}</span>
-                          <span className="mt-1 block text-sm leading-5 text-[#AFA8C8]">{item.description}</span>
+                          <span className="mt-1 block text-sm leading-5 text-[#AFA8C8]">{item.short}</span>
                         </span>
                       </div>
                     </motion.button>
                   );
                 })}
               </div>
-              {trackId && <MemeCard icon={Sparkles}>{track.reaction}</MemeCard>}
+              {trackId && <StickerCard face="🧩" title="Навык выбран" text={`${track.skillMeme} Теперь нужна не фраза, а доказательство.`} />}
               <button type="button" disabled={!trackId} onClick={() => go(3)} className="btn-primary mt-6 w-full gap-2 py-4 disabled:cursor-not-allowed disabled:opacity-45">
-                Получить миссию
+                Открыть загадку
                 <ArrowRight className="h-5 w-5" />
               </button>
             </QuestShell>
           )}
 
           {step === 3 && (
+            <QuestShell key="riddle">
+              <p className="text-xs uppercase tracking-[0.22em] text-[#C4B5FD]">Первое испытание</p>
+              <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-5xl">Отгадай, что делает навык доказанным</h1>
+              <StickerCard face="🤔" title="Загадка" text={track.riddle} />
+              <div className="mt-6 grid gap-3">
+                {track.riddleOptions.map((option, index) => {
+                  const answered = riddleAnswer !== null;
+                  const chosen = riddleAnswer === index;
+                  const correct = track.riddleAnswer === index;
+                  return (
+                    <motion.button
+                      key={option}
+                      type="button"
+                      whileTap={{ scale: answered ? 1 : 0.96 }}
+                      disabled={answered}
+                      onClick={() => {
+                        setRiddleAnswer(index);
+                        vibrate(correct ? [15, 20, 15] : 18);
+                      }}
+                      className={cn(
+                        "min-h-16 rounded-2xl border px-4 py-4 text-left text-base font-medium transition",
+                        !answered && "border-[rgba(168,85,247,0.18)] bg-[rgba(255,255,255,0.04)] hover:border-[#A855F7]",
+                        answered && correct && "border-[rgba(34,197,94,0.45)] bg-[rgba(34,197,94,0.14)] text-[#DCFCE7]",
+                        answered && chosen && !correct && "border-[rgba(245,158,11,0.45)] bg-[rgba(245,158,11,0.12)] text-[#FEF3C7]",
+                        answered && !chosen && !correct && "border-[rgba(168,85,247,0.12)] bg-[rgba(255,255,255,0.025)] text-[#8D87A9]",
+                      )}
+                    >
+                      <span className="mr-3 text-[#C084FC]">{index + 1}.</span>
+                      {option}
+                    </motion.button>
+                  );
+                })}
+              </div>
+              {riddleAnswer !== null && (
+                <div className="mt-5">
+                  <StickerCard
+                    face={riddleCorrect ? "😎" : "😅"}
+                    title={riddleCorrect ? "+20 доверия" : "Не провал"}
+                    text={riddleCorrect ? track.riddleMeme : "Наставник позже поможет докрутить результат."}
+                    tone={riddleCorrect ? "green" : "amber"}
+                  />
+                </div>
+              )}
+              <button type="button" disabled={riddleAnswer === null} onClick={() => go(4)} className="btn-primary mt-6 w-full gap-2 py-4 disabled:cursor-not-allowed disabled:opacity-45">
+                Получить миссию
+                <ArrowRight className="h-5 w-5" />
+              </button>
+            </QuestShell>
+          )}
+
+          {step === 4 && (
             <QuestShell key="mission">
               <div className="flex items-start gap-3">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[rgba(123,44,255,0.18)] text-[#E9D5FF]">
+                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[rgba(123,44,255,0.18)] text-[#E9D5FF]">
                   <track.icon className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-[0.22em] text-[#C4B5FD]">Новая миссия</p>
+                  <p className="text-xs uppercase tracking-[0.22em] text-[#C4B5FD]">Реальная миссия</p>
                   <h1 className="mt-2 text-2xl font-bold leading-tight sm:text-4xl">{track.situation}</h1>
                 </div>
               </div>
-              <p className="mt-5 text-sm leading-6 text-[#AFA8C8]">
-                Тебя не знают лично. Поэтому смотрят не на слова, а на то, что ты можешь сделать. Выбери 2 сильных действия.
-              </p>
-
+              <p className="mt-5 text-sm leading-6 text-[#AFA8C8]">Выбери 2 действия, которые превратят работу в кейс.</p>
               <div className="mt-7 grid gap-3">
                 {track.actions.map((action, index) => {
                   const selected = selectedActions.includes(index);
-                  const correct = track.correct.includes(index);
+                  const correct = track.correctActions.includes(index);
                   return (
                     <motion.button
                       key={action}
@@ -719,14 +765,12 @@ export default function EventQuestPage() {
                   );
                 })}
               </div>
-
               {missionChecked && (
-                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mt-6 space-y-3">
-                  <MemeCard icon={BadgeCheck}>{market.result}</MemeCard>
-                  <ScorePills scores={scoresFor(missionScore, null)} />
-                </motion.div>
+                <div className="mt-6 space-y-3">
+                  <StickerCard face={missionScore === "strong" ? "👀" : missionScore === "medium" ? "🛠️" : "🥲"} title={market.badge} text={market.main} tone={missionScore === "strong" ? "green" : missionScore === "medium" ? "violet" : "amber"} />
+                  <ScoreBars scores={calculateScores(riddleCorrect, missionScore, null)} />
+                </div>
               )}
-
               {!missionChecked ? (
                 <button
                   type="button"
@@ -741,80 +785,78 @@ export default function EventQuestPage() {
                   <ArrowRight className="h-5 w-5" />
                 </button>
               ) : (
-                <button type="button" onClick={() => go(4)} className="btn-primary mt-6 w-full gap-2 py-4">
-                  Посмотреть реакцию рынка
+                <button type="button" onClick={() => go(5)} className="btn-primary mt-6 w-full gap-2 py-4">
+                  Как это видит рынок?
                   <ArrowRight className="h-5 w-5" />
                 </button>
               )}
             </QuestShell>
           )}
 
-          {step === 4 && (
+          {step === 5 && (
             <QuestShell key="market">
-              <p className="text-xs uppercase tracking-[0.22em] text-[#C4B5FD]">Как тебя видит рынок</p>
-              <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-5xl">{market.title}</h1>
-              <div className="mt-6 grid gap-3">
-                <MemeCard icon={UserRoundCheck}>{market.subtitle}</MemeCard>
-                <MemeCard icon={Sparkles}>{market.badge}</MemeCard>
+              <p className="text-xs uppercase tracking-[0.22em] text-[#C4B5FD]">Мем-реакция рынка</p>
+              <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-5xl">Три зрителя твоего кейса</h1>
+              <div className="mt-7 grid gap-3 sm:grid-cols-3">
+                <StickerCard face="🧐" title="Рынок" text={market.main} tone={missionScore === "weak" ? "amber" : "violet"} />
+                <StickerCard face="🧠" title="Наставник" text={market.mentor} />
+                <StickerCard face="💼" title="Работодатель" text={market.employer} tone={missionScore === "strong" ? "green" : "violet"} />
               </div>
-              <button type="button" onClick={() => go(5)} className="btn-primary mt-7 w-full gap-2 py-4">
+              <button type="button" onClick={() => go(6)} className="btn-primary mt-7 w-full gap-2 py-4">
                 Получить правку наставника
                 <ArrowRight className="h-5 w-5" />
               </button>
             </QuestShell>
           )}
 
-          {step === 5 && (
+          {step === 6 && (
             <QuestShell key="mentor">
-              <p className="text-xs uppercase tracking-[0.22em] text-[#C4B5FD]">Правка наставника</p>
-              <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-5xl">Момент истины</h1>
-              <p className="mt-3 text-sm leading-6 text-[#AFA8C8]">Обидеться на правку или сделать работу сильнее?</p>
+              <p className="text-xs uppercase tracking-[0.22em] text-[#C4B5FD]">Наставник в чате</p>
+              <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-5xl">Обидеться или доработать?</h1>
               <div className="mt-6">
                 <MentorChat track={track} done={typingDone} />
               </div>
               {typingDone && (
-                <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="mt-6 grid gap-3 sm:grid-cols-2">
+                <div className="mt-6 grid gap-3 sm:grid-cols-2">
                   <button
                     type="button"
                     onClick={() => {
                       setMentorDecision("ignore");
-                      go(6);
+                      go(7);
                     }}
                     className="btn-ghost py-4"
                   >
-                    Игнорировать правку
+                    Обидеться и игнорировать
                   </button>
                   <button
                     type="button"
                     onClick={() => {
                       setMentorDecision("improve");
-                      go(6);
+                      go(7);
                     }}
                     className="btn-primary gap-2 py-4"
                   >
-                    Доработать результат
+                    Доработать как будущий профи
                     <Sparkles className="h-5 w-5" />
                   </button>
-                </motion.div>
+                </div>
               )}
             </QuestShell>
           )}
 
-          {step === 6 && (
+          {step === 7 && (
             <QuestShell key="case" className="text-center">
               <Confetti />
               <p className="text-xs uppercase tracking-[0.22em] text-[#C4B5FD]">Проверяем результат...</p>
               <h1 className="mt-3 text-3xl font-bold sm:text-5xl">Кейс разблокирован</h1>
-              <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-[#AFA8C8]">
-                Теперь это не «я вроде умею», а «вот что я сделал».
-              </p>
+              <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-[#AFA8C8]">Теперь это не «я вроде умею», а «вот что я сделал».</p>
               <div className="mx-auto mt-8 max-w-md space-y-3 text-left">
-                {["Навык применён", "Наставник проверил", "Кейс добавлен в Skill ID"].map((item, index) => (
+                {["Навык применён", "Работа доработана", "Наставник проверил", "Кейс добавлен в Skill ID"].map((item, index) => (
                   <motion.div
                     key={item}
                     initial={{ opacity: 0, x: -16 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.25, duration: 0.35 }}
+                    transition={{ delay: index * 0.22, duration: 0.35 }}
                     className="flex items-center gap-3 rounded-2xl border border-[rgba(34,197,94,0.22)] bg-[rgba(34,197,94,0.09)] px-4 py-4"
                   >
                     <CheckCircle2 className="h-5 w-5 text-[#86EFAC]" />
@@ -822,64 +864,60 @@ export default function EventQuestPage() {
                   </motion.div>
                 ))}
               </div>
-              <div className="mt-7 inline-flex items-center gap-2 rounded-full border border-[rgba(34,197,94,0.3)] bg-[rgba(34,197,94,0.12)] px-4 py-2 text-sm font-semibold text-[#DCFCE7]">
-                <BadgeCheck className="h-5 w-5" />
-                Доказательство получено
+              <div className="mt-7 flex flex-wrap justify-center gap-2">
+                {["Доказательство получено", "Портфолио оживает", "Skill ID обновлён"].map((badge) => (
+                  <span key={badge} className="rounded-full border border-[rgba(34,197,94,0.3)] bg-[rgba(34,197,94,0.12)] px-4 py-2 text-sm font-semibold text-[#DCFCE7]">
+                    {badge}
+                  </span>
+                ))}
               </div>
-              <button type="button" onClick={() => go(7)} className="btn-primary mt-7 w-full gap-2 py-4 sm:w-auto sm:px-8">
+              <button type="button" onClick={() => go(8)} className="btn-primary mt-7 w-full gap-2 py-4 sm:w-auto sm:px-8">
                 Открыть Skill ID
                 <ArrowRight className="h-5 w-5" />
               </button>
             </QuestShell>
           )}
 
-          {step === 7 && (
+          {step === 8 && (
             <QuestShell key="finish">
               <Confetti />
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-full border border-[rgba(34,197,94,0.28)] bg-[rgba(34,197,94,0.12)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#BBF7D0]">
-                  Работодатель заинтересовался
+                  Работодатель проснулся
                 </span>
                 <span className="rounded-full border border-[rgba(168,85,247,0.25)] bg-[rgba(123,44,255,0.14)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[#D8C4FF]">
-                  Теперь есть что показать
+                  Это уже не просто слова
                 </span>
               </div>
-              <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-5xl">Твой навык может работать на тебя</h1>
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-[#AFA8C8]">
-                Неважно, ты программист, повар, педагог, психолог, юрист или дизайнер. Если твой результат можно показать, его можно оценить.
-              </p>
-
+              <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-5xl">SKILL ID ACTIVATED</h1>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-[#AFA8C8]">Навык стал кейсом. Кейс стал доверием. Доверие стало шансом на возможность.</p>
               <div className="mt-7 grid gap-5 lg:grid-cols-[1fr_0.9fr] lg:items-start">
-                <ResultCard goal={goal} track={track} scores={scores} />
+                <SkillIdCard goal={goal} track={track} scores={scores} />
                 <div className="space-y-4">
-                  <ScorePills scores={scores} />
+                  <ScoreBars scores={scores} />
+                  <StickerCard face="💬" title="Мем-реакция" text={finalMeme(scores)} tone={scores.trust >= 90 ? "green" : "violet"} />
                   <div className="grid gap-3">
                     {[
-                      ["Заработок", "Когда есть кейс, заказчику проще поверить, что ты справишься.", Coins],
-                      ["Работа", "Работодатель видит не только слова, а подтверждённый результат.", BriefcaseBusiness],
-                      ["Рост", "Наставник помогает превратить попытку в работу, которую не стыдно показать.", TrendingIcon],
-                    ].map(([title, text, Icon]) => {
+                      ["Можно показать заказчику", Eye],
+                      ["Можно добавить в портфолио", Palette],
+                      ["Можно использовать на собеседовании", BriefcaseBusiness],
+                    ].map(([title, Icon]) => {
                       const CardIcon = Icon as LucideIcon;
                       return (
-                        <div key={title as string} className="rounded-2xl border border-[rgba(168,85,247,0.16)] bg-[rgba(255,255,255,0.04)] p-4">
-                          <div className="flex items-start gap-3">
-                            <CardIcon className="mt-0.5 h-5 w-5 shrink-0 text-[#C084FC]" />
-                            <div>
-                              <p className="font-semibold">{title as string}</p>
-                              <p className="mt-1 text-sm leading-6 text-[#AFA8C8]">{text as string}</p>
-                            </div>
-                          </div>
+                        <div key={title as string} className="flex items-center gap-3 rounded-2xl border border-[rgba(168,85,247,0.16)] bg-[rgba(255,255,255,0.04)] p-4">
+                          <CardIcon className="h-5 w-5 shrink-0 text-[#C084FC]" />
+                          <span className="text-sm font-semibold">{title as string}</span>
                         </div>
                       );
                     })}
                   </div>
                 </div>
               </div>
-
-              <MemeCard icon={Fingerprint}>
-                SkillBarter — это платформа, где ты проходишь уроки, выполняешь реальные задачи, получаешь правки наставников и собираешь Skill ID. Так навык превращается в кейс, кейс — в доверие, а доверие — в возможность заработать, попасть в команду или начать карьеру.
-              </MemeCard>
-
+              <StickerCard
+                face="🚀"
+                title="Что такое SkillBarter"
+                text="Ты проходишь уроки, выполняешь реальные задачи, получаешь правки наставников и собираешь Skill ID. Так навык превращается в кейс, кейс — в доверие, а доверие — в возможность заработать, попасть в команду или начать карьеру."
+              />
               <div className="mt-7 grid gap-3 sm:grid-cols-3">
                 <Link href="/access" className="btn-primary gap-2 py-4">
                   Открыть MVP
@@ -904,8 +942,4 @@ export default function EventQuestPage() {
       </div>
     </main>
   );
-}
-
-function TrendingIcon(props: React.ComponentProps<"svg">) {
-  return <Target {...props} />;
 }
