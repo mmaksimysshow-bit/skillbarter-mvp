@@ -175,7 +175,7 @@ export default function EventPage() {
   const barRef = useRef(0);
   const barDirectionRef = useRef(1);
   const audioRef = useRef<AudioContext | null>(null);
-  const musicRef = useRef<{ melody: number } | null>(null);
+  const musicRef = useRef<HTMLAudioElement | null>(null);
   const fartRef = useRef<HTMLAudioElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -425,23 +425,22 @@ export default function EventPage() {
   };
 
   const startMusic = () => {
-    const audio = audioRef.current;
-    if (!audio || musicRef.current) return;
-    const notes = [261.63, 329.63, 392, 493.88, 440, 392, 329.63, 293.66];
-    let step = 0;
-    const melody = window.setInterval(() => {
-      const note = notes[step % notes.length];
-      playTone(note, 0.2, "sine", 0.016);
-      if (step % 4 === 0) playTone(note / 2, 0.45, "triangle", 0.012);
-      step += 1;
-    }, 520);
-    musicRef.current = { melody };
+    if (musicRef.current) return;
+    const music = new Audio("/sounds/background-song.mp3");
+    music.loop = true;
+    music.volume = 0.13;
+    musicRef.current = music;
+    void music.play().catch(() => {
+      musicRef.current = null;
+      playTone(392, 0.2, "sine", 0.012);
+    });
   };
 
   const stopMusic = () => {
     const music = musicRef.current;
     if (!music) return;
-    window.clearInterval(music.melody);
+    music.pause();
+    music.currentTime = 0;
     musicRef.current = null;
   };
 
@@ -478,17 +477,41 @@ export default function EventPage() {
     canvas.height = height;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    ctx.filter = "contrast(1.25) saturate(1.6) hue-rotate(18deg)";
+    const effect = randomPhotoEffect();
+    ctx.filter = `contrast(${effect.contrast}) saturate(${effect.saturate}) hue-rotate(${effect.hue}deg)`;
     ctx.drawImage(video, 0, 0, width, height);
     ctx.filter = "none";
     const cx = width / 2;
     const cy = height / 2;
     ctx.fillStyle = "rgba(217,70,239,.16)";
     ctx.fillRect(0, 0, width, height);
+    ctx.save();
+    ctx.translate(cx, cy - height * 0.02);
+    ctx.scale(effect.faceScaleX, effect.faceScaleY);
+    ctx.strokeStyle = "rgba(255,255,255,.75)";
+    ctx.lineWidth = Math.max(4, width / 95);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, width * 0.22, height * 0.31, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
     ctx.fillStyle = "rgba(0,0,0,.78)";
     ctx.fillRect(cx - width * 0.22, cy - height * 0.16, width * 0.16, height * 0.065);
     ctx.fillRect(cx + width * 0.06, cy - height * 0.16, width * 0.16, height * 0.065);
     ctx.fillRect(cx - width * 0.06, cy - height * 0.135, width * 0.12, height * 0.025);
+    ctx.fillStyle = effect.noseColor;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - height * 0.015, width * effect.nose, height * effect.nose * 1.45, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,.85)";
+    ctx.beginPath();
+    ctx.ellipse(cx - width * 0.13, cy - height * 0.02, width * 0.07, height * 0.035, -0.2, 0, Math.PI * 2);
+    ctx.ellipse(cx + width * 0.13, cy - height * 0.02, width * 0.07, height * 0.035, 0.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = effect.cheekColor;
+    ctx.beginPath();
+    ctx.ellipse(cx - width * 0.2, cy + height * 0.04, width * 0.09, height * 0.045, -0.2, 0, Math.PI * 2);
+    ctx.ellipse(cx + width * 0.2, cy + height * 0.04, width * 0.09, height * 0.045, 0.2, 0, Math.PI * 2);
+    ctx.fill();
     ctx.strokeStyle = "rgba(0,0,0,.86)";
     ctx.lineWidth = Math.max(8, width / 55);
     ctx.beginPath();
@@ -499,7 +522,7 @@ export default function EventPage() {
     ctx.stroke();
     ctx.fillStyle = "rgba(34,211,238,.9)";
     ctx.font = `${Math.max(24, width / 15)}px sans-serif`;
-    ctx.fillText("SKILL NPC", 24, 52);
+    ctx.fillText(effect.label, 24, 52);
     ctx.fillStyle = "rgba(255,255,255,.9)";
     ctx.fillText("мемный фильтр +100 к вайбу", 24, 92);
     ctx.fillStyle = "white";
@@ -834,23 +857,38 @@ function randomBad(item: string) {
 
 function roast() {
   const lines = [
-    "Фу, лох-момент.",
-    "Ботяра, соберись.",
-    "Минус вайб, плюс попытка.",
-    "Навык есть, попадание пока на картошке.",
-    "Рынок сделал facepalm.",
-    "Ты сейчас играешь как Wi-Fi в подвале.",
-    "Это было уверенно, но мимо.",
-    "Работодатель моргнул и закрыл вкладку.",
-    "Кейс плачет в углу.",
-    "Портфолио попросило не позорить.",
-    "Минус репутация, плюс опыт.",
-    "Наставник тяжело вдохнул.",
-    "Это не провал, это обучающий шлёпок.",
-    "Пруфы ушли пить чай.",
-    "Босс сказал: попробуй руками.",
+    "Фу бот, соберись.",
+    "Лох-момент засчитан.",
+    "Иван Золо бы попал лучше.",
+    "Маме такое не показывай, она расстроится.",
+    "Мама спросит: это точно мой киберспортсмен?",
+    "Ботяра, ты куда нажал?",
+    "Нубский промах, но живём.",
+    "Фу, реакция как у лагающего калькулятора.",
+    "Тебя сейчас даже NPC пожалел.",
+    "Минус вайб, плюс позорный опыт.",
+    "Портфолио отвернулось к стене.",
+    "Работодатель закрыл вкладку ногой.",
+    "Кейс сказал: не трогай меня.",
+    "Наставник выдохнул как батя на собрании.",
+    "Скилл есть, руки пока в демо-версии.",
+    "Ты нажал так, будто мышка против тебя.",
+    "Мама бы сказала: главное участие, но нет.",
+    "Позорный тык, но смешной.",
+    "Босс записал тебя в список ботов.",
+    "Фу, это было на уровне табуретки.",
   ];
   return lines[Math.floor(Math.random() * lines.length)];
+}
+
+function randomPhotoEffect() {
+  const effects = [
+    { label: "SKILL NPC", nose: 0.052, contrast: 1.25, saturate: 1.8, hue: 18, faceScaleX: 1.08, faceScaleY: 0.9, noseColor: "rgba(244,114,182,.9)", cheekColor: "rgba(244,63,94,.42)" },
+    { label: "BOSS SLAYER", nose: 0.035, contrast: 1.45, saturate: 1.4, hue: 220, faceScaleX: 0.86, faceScaleY: 1.14, noseColor: "rgba(34,211,238,.86)", cheekColor: "rgba(59,130,246,.38)" },
+    { label: "CASE GIGACHAD", nose: 0.046, contrast: 1.35, saturate: 1.2, hue: 310, faceScaleX: 1.28, faceScaleY: 0.78, noseColor: "rgba(250,204,21,.88)", cheekColor: "rgba(217,70,239,.36)" },
+    { label: "MAMA PROOF", nose: 0.064, contrast: 1.2, saturate: 2, hue: 80, faceScaleX: 0.92, faceScaleY: 1.22, noseColor: "rgba(248,113,113,.9)", cheekColor: "rgba(251,146,60,.42)" },
+  ];
+  return effects[Math.floor(Math.random() * effects.length)];
 }
 
 function RoastBurst({ items }: { items: Array<{ id: number; text: string }> }) {
