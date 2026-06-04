@@ -30,6 +30,9 @@ type Skill = {
   meme: string;
   layers: string[];
   traps: string[];
+  client: string;
+  mission: string;
+  artifacts: Array<{ title: string; text: string; good: boolean; reaction: string }>;
   funnyWin: string;
   funnyFail: string;
   workTitle: string;
@@ -55,6 +58,15 @@ const skills: Skill[] = [
     meme: "Код есть. Теперь докажи, что он реально работает.",
     layers: ["Навык: форма заявки", "Задача: страница для клиента", "Правка: проверить отправку", "Skill ID: рабочий кейс"],
     traps: ["Красивый фон без формы", "Мёртвая кнопка", "Ошибка в консоли"],
+    client: "Клиент: сервис ремонта телефонов",
+    mission: "Им нужна страница заявки. Красота не спасёт, если человек не может оставить номер.",
+    artifacts: [
+      { title: "Рабочая форма заявки", text: "после отправки видно состояние успеха", good: true, reaction: "Форма не просто стоит. Она работает. Редкое зрелище." },
+      { title: "Скрин с телефона", text: "видно, что страница не развалилась на 390px", good: true, reaction: "Мобильная версия выжила. Палец попадает в кнопку." },
+      { title: "Короткое описание решения", text: "что сделал, для кого и какой результат", good: true, reaction: "Теперь кейс можно понять без расшифровщика." },
+      { title: "Неоновый фон 8 слоями", text: "выглядит мощно, но заявку не отправляет", good: false, reaction: "Фон светится, бизнес грустит. Это не доказательство." },
+      { title: "Фраза «почти готово»", text: "вечная классика незавершённых проектов", good: false, reaction: "«Почти» в портфолио не кладём. Там нужен результат." },
+    ],
     funnyWin: "Форма отправилась. Малый бизнес выдохнул. Консоль молчит, и это красиво.",
     funnyFail: "Красивая кнопка без действия — это лифт, который открывается в стену.",
     workTitle: "Страница заявки для малого бизнеса",
@@ -71,6 +83,15 @@ const skills: Skill[] = [
     meme: "Красиво — хорошо. Понятно и полезно — уже кейс.",
     layers: ["Навык: визуальная иерархия", "Задача: первый экран сайта", "Правка: усилить CTA", "Skill ID: понятный экран"],
     traps: ["17 шрифтов", "Мелкий текст", "Эффекты ради эффектов"],
+    client: "Клиент: школа английского",
+    mission: "Им нужен первый экран. За 5 секунд человек должен понять пользу и куда нажать.",
+    artifacts: [
+      { title: "Заголовок с понятной пользой", text: "не красиво ради красиво, а ясно зачем", good: true, reaction: "Человек понял оффер. Дизайн перестал быть загадкой." },
+      { title: "Одна главная кнопка", text: "без охоты за CTA по всему экрану", good: true, reaction: "Кнопка нашлась без археологической экспедиции." },
+      { title: "Проверка на телефоне", text: "текст читается, кнопка не уехала", good: true, reaction: "Мобильный экран не превратился в салат. Уже кейс." },
+      { title: "Случайный 3D-куб", text: "он крутится, но ничего не объясняет", good: false, reaction: "Куб крутится. Пользователь тоже, но от непонимания." },
+      { title: "17 шрифтов", text: "каждый кричит о своём", good: false, reaction: "Шрифтов много, смысла мало. Суд отклонил." },
+    ],
     funnyWin: "Пользователь понял, куда нажать. Где-то один UX-дизайнер тихо улыбнулся.",
     funnyFail: "17 шрифтов вошли в чат. Смысл вышел из чата.",
     workTitle: "Первый экран сайта",
@@ -87,6 +108,15 @@ const skills: Skill[] = [
     meme: "«Вкусно» на словах не считается. Нужна технология и результат.",
     layers: ["Навык: технология блюда", "Задача: позиция для меню", "Правка: описать подачу", "Skill ID: блюдо-кейс"],
     traps: ["Просто «вкусно»", "Нет времени готовки", "Нет состава"],
+    client: "Клиент: небольшое кафе",
+    mission: "Нужно блюдо для меню. Его должны повторить, оценить и красиво подать.",
+    artifacts: [
+      { title: "Состав и граммовки", text: "не магия, а повторяемый рецепт", good: true, reaction: "Блюдо перестало быть секретом древнего ордена." },
+      { title: "Технология приготовления", text: "шаги, температура, время", good: true, reaction: "Теперь это можно приготовить, а не просто представить." },
+      { title: "Фото подачи", text: "видно, как блюдо выглядит для гостя", good: true, reaction: "Кафе увидело результат. Желудок тоже заинтересовался." },
+      { title: "Описание «бомба честно»", text: "эмоционально, но не проверяемо", good: false, reaction: "Бомба — это не технология. СанПиН напрягся." },
+      { title: "Название «Авторское»", text: "звучит дорого, но не объясняет блюдо", good: false, reaction: "Слово авторское не заменяет рецепт. Увы." },
+    ],
     funnyWin: "Теперь блюдо можно повторить, а не просто загадочно нюхать экран.",
     funnyFail: "«Вкусно» — это эмоция. Заказчик просит рецепт, а не поэму.",
     workTitle: "Блюдо для меню кафе",
@@ -103,6 +133,15 @@ const skills: Skill[] = [
     meme: "Объяснить так, чтобы поняли — сильный навык.",
     layers: ["Навык: объяснение темы", "Задача: мини-урок", "Правка: вопрос на понимание", "Skill ID: понятный урок"],
     traps: ["Только термины", "Без примера", "Не проверил понимание"],
+    client: "Клиент: подготовительный курс",
+    mission: "Новичку нужно объяснить сложную тему так, чтобы он реально понял, а не просто кивнул.",
+    artifacts: [
+      { title: "Объяснение простыми словами", text: "без терминологического града", good: true, reaction: "Новичок понял. Термины пока отдыхают." },
+      { title: "Пример из жизни", text: "мостик от теории к реальности", good: true, reaction: "Пример спас урок от состояния «что происходит?»" },
+      { title: "Мини-вопрос на понимание", text: "проверяет результат, а не вежливый кивок", good: true, reaction: "Кивок разоблачён. Понимание подтверждено." },
+      { title: "Слайд из 42 терминов", text: "сразу видно, кто тут главный", good: false, reaction: "Ученик открыл астрал. Обучение временно недоступно." },
+      { title: "Фраза «ну это очевидно»", text: "самый быстрый способ потерять ученика", good: false, reaction: "Очевидно кому? Точно не новичку." },
+    ],
     funnyWin: "Новичок понял тему и не сделал вид. Редкий, но ценный момент.",
     funnyFail: "Ученик кивнул. Это не победа, это тревожный сигнал.",
     workTitle: "Мини-урок для новичка",
@@ -119,6 +158,15 @@ const skills: Skill[] = [
     meme: "Слушать, уточнять и не давить — база профессионального общения.",
     layers: ["Навык: уточнение запроса", "Задача: разбор ситуации", "Правка: сохранить границы", "Skill ID: этичный кейс"],
     traps: ["Диагноз за 5 секунд", "Давление мнением", "Совет без запроса"],
+    client: "Учебная ситуация: коммуникация",
+    mission: "Важно показать этичное общение: сначала понять запрос, не давить и не изображать врача.",
+    artifacts: [
+      { title: "Уточняющий вопрос", text: "сначала понять, с чем пришёл человек", good: true, reaction: "Разговор начался с понимания, а не с режима «я всё знаю»." },
+      { title: "Безопасные границы", text: "не обещать лечение и не давить", good: true, reaction: "Границы на месте. Профессиональность тоже." },
+      { title: "Бережное резюме запроса", text: "коротко отразить, что услышал", good: true, reaction: "Человек почувствовал, что его не перебили внутренним экспертом." },
+      { title: "Диагноз за 5 секунд", text: "быстро, громко, неправильно", good: false, reaction: "Скорость высокая. Этичность вышла покурить." },
+      { title: "Совет без запроса", text: "когда тебя не просили спасать вселенную", good: false, reaction: "Режим супергероя выключаем. Сначала запрос." },
+    ],
     funnyWin: "Ты сначала понял запрос. Разговор не превратился в шоу «я сейчас всё решу».",
     funnyFail: "Диагноз за 5 секунд — скорость высокая, профессионализм низкий.",
     workTitle: "Учебная коммуникационная ситуация",
@@ -135,6 +183,15 @@ const skills: Skill[] = [
     meme: "Позиция без фактов — уверенный монолог.",
     layers: ["Навык: правовая логика", "Задача: позиция по ситуации", "Правка: найти основание", "Skill ID: аргументированный кейс"],
     traps: ["Обещать победу", "Игнорировать документы", "Громкий голос"],
+    client: "Учебная юридическая клиника",
+    mission: "Нужно собрать позицию: факты, документы, основание. Без обещаний победы и магии.",
+    artifacts: [
+      { title: "Факты ситуации", text: "что произошло, когда и с кем", good: true, reaction: "Позиция получила ноги. Теперь она не висит в воздухе." },
+      { title: "Документы", text: "на что можно опереться", good: true, reaction: "Документы в деле. Уверенность стала полезнее." },
+      { title: "Правовое основание", text: "почему позиция вообще работает", good: true, reaction: "Вот теперь это звучит как аргумент, а не как настроение." },
+      { title: "Обещание 100% победы", text: "красиво, но опасно и непрофессионально", good: false, reaction: "Хрустальный шар убираем. Работаем с фактами." },
+      { title: "Громкий голос", text: "добавляет громкость, но не основание", good: false, reaction: "Децибелы есть. Аргументов пока нет." },
+    ],
     funnyWin: "Факты на месте, основание найдено. Уверенный монолог стал позицией.",
     funnyFail: "Громкий голос добавляет децибелы, но не добавляет основания.",
     workTitle: "Учебная правовая позиция",
@@ -224,17 +281,17 @@ export default function EventPage() {
     }, 240);
   };
 
-  const addLayer = (layer: string, good: boolean) => {
+  const addLayer = (layer: string, good: boolean, reaction?: string) => {
     if (!good) {
       setShake(true);
-      setMessage(skill.funnyFail);
+      setMessage(reaction ?? skill.funnyFail);
       setTimeout(() => setShake(false), 420);
       return;
     }
     if (stack.includes(layer)) return;
     setStack((current) => [...current, layer]);
     addStats(7, 12, 4);
-    setMessage(stack.length + 1 >= skill.layers.length ? "Кейс-бургер собран. Теперь наставник найдёт слабое место." : skill.funnyWin);
+    setMessage(stack.length + 1 >= 3 ? "Три доказательства собраны. Теперь наставник найдёт слабое место и докрутит кейс." : reaction ?? skill.funnyWin);
   };
 
   const tapWork = (hit: boolean) => {
@@ -410,12 +467,12 @@ export default function EventPage() {
 
           {phase === 3 && (
             <Screen key="burger">
-              <GameTitle kicker="Раунд 3" title="Собери кейс-бургер" text="Кейс — это не «я старался». Это навык + задача + правка + результат в Skill ID." />
-              <RuleCard step="Что делать" text="Перед тобой 7 ингредиентов. Выбери 4, которые реально убедят заказчика или работодателя. Ошибёшься — рынок отреагирует." />
+              <GameTitle kicker="Раунд 3" title="Рейд за доказательствами" text="Ты попал в хаос проекта. Нужно вытащить 3 вещи, которые реально превращают навык в кейс." />
+              <RuleCard step={skill.client} text={`${skill.mission} Выбери только то, что можно проверить, показать или обсудить с наставником.`} />
               <div className="grid flex-1 items-center gap-5 lg:grid-cols-[.9fr_1.1fr]">
                 <motion.div animate={shake ? { x: [-8, 8, -6, 6, 0] } : { x: 0 }} className="rounded-[34px] border border-white/10 bg-white/[0.055] p-5">
                   <div className="mx-auto flex min-h-[330px] max-w-sm flex-col-reverse justify-center gap-3">
-                    {stack.length === 0 && <p className="rounded-[24px] border border-dashed border-white/20 p-8 text-center text-white/48">Тут пока пусто. Собери доказательство слоями.</p>}
+                    {stack.length === 0 && <p className="rounded-[24px] border border-dashed border-white/20 p-8 text-center text-white/48">Сейф пуст. Вытащи 3 артефакта, которые не стыдно показать.</p>}
                     {stack.map((layer, index) => (
                       <motion.div key={layer} initial={{ opacity: 0, y: -34, scale: 0.92 }} animate={{ opacity: 1, y: 0, scale: 1 }} className="rounded-full border border-fuchsia-200/30 bg-gradient-to-r from-fuchsia-500/25 to-cyan-400/15 px-5 py-4 text-center font-black shadow-lg shadow-fuchsia-950/40">
                         {index === stack.length - 1 ? "✨ " : ""}
@@ -426,19 +483,20 @@ export default function EventPage() {
                   <p className="mt-4 text-center text-sm text-white/58">{message}</p>
                 </motion.div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {[...skill.layers.map((title) => ({ title, good: true })), ...skill.traps.map((title) => ({ title, good: false }))].map((layer, index) => (
-                    <button key={layer.title} onClick={() => addLayer(layer.title, layer.good)} disabled={stack.includes(layer.title)} className="min-h-[92px] rounded-[24px] border border-white/10 bg-white/[0.06] p-4 text-left font-bold transition hover:border-fuchsia-300/45 hover:bg-fuchsia-400/10 active:scale-[0.97] disabled:opacity-45">
+                  {skill.artifacts.map((layer, index) => (
+                    <button key={layer.title} onClick={() => addLayer(layer.title, layer.good, layer.reaction)} disabled={stack.includes(layer.title)} className="min-h-[118px] rounded-[24px] border border-white/10 bg-white/[0.06] p-4 text-left font-bold transition hover:border-fuchsia-300/45 hover:bg-fuchsia-400/10 active:scale-[0.97] disabled:opacity-45">
                       <span className="mb-2 inline-flex rounded-full bg-white/10 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-white/48">
-                        ингредиент #{index + 1}
+                        артефакт #{index + 1}
                       </span>
-                      <span className="block">🍔 {layer.title}</span>
+                      <span className="block">🧨 {layer.title}</span>
+                      <span className="mt-2 block text-sm font-medium text-white/52">{layer.text}</span>
                     </button>
                   ))}
                 </div>
               </div>
               <Footer>
-                <Sticker kind="mentor" title="Наставник" text="Кейс почти есть. Но сильная работа проходит через правку." />
-                <PrimaryButton disabled={stack.length < skill.layers.length} onClick={() => setPhase(4)}>
+                <Sticker kind="mentor" title="Наставник" text="Артефакты собраны. Теперь нужно найти, где кейс ещё слабый." />
+                <PrimaryButton disabled={stack.length < 3} onClick={() => setPhase(4)}>
                   Отдать на правку <ArrowRight size={18} />
                 </PrimaryButton>
               </Footer>
