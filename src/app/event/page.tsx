@@ -382,6 +382,7 @@ export default function EventPage() {
     if (!AudioCtor) return;
     audioRef.current = new AudioCtor();
     fartRef.current = new Audio("/sounds/fart-with-reverb.mp3");
+    fartRef.current.preload = "none";
     fartRef.current.volume = 0.72;
   };
 
@@ -427,6 +428,8 @@ export default function EventPage() {
   const startMusic = () => {
     if (musicRef.current) return;
     const music = new Audio("/sounds/background-song.mp3");
+    music.preload = "none";
+    music.crossOrigin = "anonymous";
     music.loop = true;
     music.volume = 0.13;
     musicRef.current = music;
