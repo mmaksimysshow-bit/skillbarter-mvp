@@ -151,14 +151,6 @@ const memeImages = [
   },
 ];
 
-const photoStickers = [
-  { label: "SWAG NPC", src: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f60e.png", fallback: "😎", scale: 0.42 },
-  { label: "CLOWN MODE", src: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f921.png", fallback: "🤡", scale: 0.5 },
-  { label: "COWBOY SKILL", src: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f920.png", fallback: "🤠", scale: 0.52 },
-  { label: "BOT MASK", src: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f978.png", fallback: "🥸", scale: 0.55 },
-  { label: "ALIEN CASE", src: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f47d.png", fallback: "👽", scale: 0.5 },
-];
-
 export default function EventPage() {
   const reduceMotion = useReducedMotion();
   const [phase, setPhase] = useState<Phase>(0);
@@ -475,7 +467,7 @@ export default function EventPage() {
     streamRef.current = null;
   };
 
-  const capturePhoto = async () => {
+  const capturePhoto = () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas) return;
@@ -485,66 +477,8 @@ export default function EventPage() {
     canvas.height = height;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const effect = randomPhotoEffect();
-    ctx.filter = `contrast(${effect.contrast}) saturate(${effect.saturate}) hue-rotate(${effect.hue}deg)`;
-    ctx.drawImage(video, 0, 0, width, height);
     ctx.filter = "none";
-    const cx = width / 2;
-    const cy = height / 2;
-    ctx.fillStyle = "rgba(217,70,239,.16)";
-    ctx.fillRect(0, 0, width, height);
-    ctx.save();
-    ctx.translate(cx, cy - height * 0.02);
-    ctx.scale(effect.faceScaleX, effect.faceScaleY);
-    ctx.strokeStyle = "rgba(255,255,255,.75)";
-    ctx.lineWidth = Math.max(4, width / 95);
-    ctx.beginPath();
-    ctx.ellipse(0, 0, width * 0.22, height * 0.31, 0, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.restore();
-    ctx.fillStyle = "rgba(0,0,0,.78)";
-    ctx.fillRect(cx - width * 0.22, cy - height * 0.16, width * 0.16, height * 0.065);
-    ctx.fillRect(cx + width * 0.06, cy - height * 0.16, width * 0.16, height * 0.065);
-    ctx.fillRect(cx - width * 0.06, cy - height * 0.135, width * 0.12, height * 0.025);
-    ctx.fillStyle = effect.noseColor;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy - height * 0.015, width * effect.nose, height * effect.nose * 1.45, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "rgba(255,255,255,.85)";
-    ctx.beginPath();
-    ctx.ellipse(cx - width * 0.13, cy - height * 0.02, width * 0.07, height * 0.035, -0.2, 0, Math.PI * 2);
-    ctx.ellipse(cx + width * 0.13, cy - height * 0.02, width * 0.07, height * 0.035, 0.2, 0, Math.PI * 2);
-    ctx.fill();
-    const sticker = randomPhotoSticker();
-    const stickerSize = width * sticker.scale;
-    try {
-      const stickerImage = await loadImage(sticker.src);
-      ctx.drawImage(stickerImage, cx - stickerSize / 2, cy - height * 0.43, stickerSize, stickerSize);
-    } catch {
-      ctx.font = `${Math.max(72, width / 5)}px sans-serif`;
-      ctx.fillText(sticker.fallback, cx - stickerSize / 3, cy - height * 0.2);
-    }
-    ctx.fillStyle = effect.cheekColor;
-    ctx.beginPath();
-    ctx.ellipse(cx - width * 0.2, cy + height * 0.04, width * 0.09, height * 0.045, -0.2, 0, Math.PI * 2);
-    ctx.ellipse(cx + width * 0.2, cy + height * 0.04, width * 0.09, height * 0.045, 0.2, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(0,0,0,.86)";
-    ctx.lineWidth = Math.max(8, width / 55);
-    ctx.beginPath();
-    ctx.moveTo(cx - width * 0.03, cy + height * 0.09);
-    ctx.quadraticCurveTo(cx - width * 0.13, cy + height * 0.14, cx - width * 0.24, cy + height * 0.09);
-    ctx.moveTo(cx + width * 0.03, cy + height * 0.09);
-    ctx.quadraticCurveTo(cx + width * 0.13, cy + height * 0.14, cx + width * 0.24, cy + height * 0.09);
-    ctx.stroke();
-    ctx.fillStyle = "rgba(34,211,238,.9)";
-    ctx.font = `${Math.max(24, width / 15)}px sans-serif`;
-    ctx.fillText(`${effect.label} / ${sticker.label}`, 24, 52);
-    ctx.fillStyle = "rgba(255,255,255,.9)";
-    ctx.fillText("мемный фильтр +100 к вайбу", 24, 92);
-    ctx.fillStyle = "white";
-    ctx.font = `${Math.max(28, width / 13)}px sans-serif`;
-    ctx.fillText(surrendered ? "СДАЛСЯ БОТ" : "КРАСАВЧИК UwU", 24, height - 32);
+    ctx.drawImage(video, 0, 0, width, height);
     setPhoto(canvas.toDataURL("image/png"));
     stopCamera();
     playSuccess();
@@ -874,60 +808,38 @@ function randomBad(item: string) {
 
 function roast() {
   const lines = [
-    "Фу бот, соберись уже.",
-    "Лох-момент официально засчитан.",
-    "Иван Золо бы попал лучше, честно.",
-    "Маме такое не показывай, она расстроится.",
-    "Мама спросит: это точно мой киберспортсмен?",
-    "Ботяра, ты куда нажал?",
-    "Нубский промах, но живём.",
-    "Фу, реакция как у лагающего калькулятора.",
-    "Тебя сейчас даже NPC пожалел.",
-    "Минус вайб, плюс позорный опыт.",
-    "Портфолио отвернулось к стене.",
-    "Работодатель закрыл вкладку ногой.",
-    "Кейс сказал: не трогай меня.",
-    "Наставник выдохнул как батя на собрании.",
-    "Скилл есть, руки пока в демо-версии.",
-    "Ты нажал так, будто мышка против тебя.",
-    "Мама бы сказала: главное участие, но нет.",
-    "Позорный тык, но смешной.",
-    "Босс записал тебя в список ботов.",
-    "Фу, это было на уровне табуретки.",
-    "Фут, позорный клик.",
-    "Мамкин speedrunner, но без speed.",
-    "Ты сейчас как Wi-Fi у бабушки.",
-    "Даже кнопка обиделась.",
-    "Skill issue, брат.",
-    "Это был не клик, а просьба о помощи.",
-    "Минус аура, плюс мем.",
-    "Ты попал в учебник по промахам.",
+    "Фу бот, нажимай нормально.",
+    "Ботяра, ты куда попал?",
+    "Иван Золо бы сейчас заржал.",
+    "Иван Золо на минималках.",
+    "У Ивана Золо реакция быстрее.",
+    "Маме такое не показывай.",
+    "Мама сказала бы: выключай компьютер.",
+    "Мама бы спросила: это мой чемпион?",
+    "Мамкин киберспортсмен промахнулся.",
+    "Мамкин speedrunner без speed.",
+    "Фу, нубский клик.",
+    "Лох-момент засчитан.",
+    "Фу лох, соберись.",
+    "Нажал как бот из 2012.",
+    "Даже бот бы попал лучше.",
+    "Бот на автопилоте и то умнее.",
+    "Позорный тык.",
+    "Фут, минус аура.",
+    "Ты сейчас как лаг в Roblox.",
+    "Руки в демо-версии.",
+    "Кнопка тебя переиграла.",
+    "Мышка подала на развод.",
+    "Мама бы сказала: сынок, ну как так.",
+    "Иван Золо момент, но без харизмы.",
+    "Бот-режим активирован.",
+    "Нубасик, попробуй ещё раз.",
+    "Это был клик уровня табуретки.",
+    "Ты промахнулся как Wi-Fi в лифте.",
+    "Фу, кринжовый промах.",
+    "Мама верит, но статистика нет.",
   ];
   return lines[Math.floor(Math.random() * lines.length)];
-}
-
-function randomPhotoSticker() {
-  return photoStickers[Math.floor(Math.random() * photoStickers.length)];
-}
-
-function randomPhotoEffect() {
-  const effects = [
-    { label: "SKILL NPC", nose: 0.052, contrast: 1.25, saturate: 1.8, hue: 18, faceScaleX: 1.08, faceScaleY: 0.9, noseColor: "rgba(244,114,182,.9)", cheekColor: "rgba(244,63,94,.42)" },
-    { label: "BOSS SLAYER", nose: 0.035, contrast: 1.45, saturate: 1.4, hue: 220, faceScaleX: 0.86, faceScaleY: 1.14, noseColor: "rgba(34,211,238,.86)", cheekColor: "rgba(59,130,246,.38)" },
-    { label: "CASE GIGACHAD", nose: 0.046, contrast: 1.35, saturate: 1.2, hue: 310, faceScaleX: 1.28, faceScaleY: 0.78, noseColor: "rgba(250,204,21,.88)", cheekColor: "rgba(217,70,239,.36)" },
-    { label: "MAMA PROOF", nose: 0.064, contrast: 1.2, saturate: 2, hue: 80, faceScaleX: 0.92, faceScaleY: 1.22, noseColor: "rgba(248,113,113,.9)", cheekColor: "rgba(251,146,60,.42)" },
-  ];
-  return effects[Math.floor(Math.random() * effects.length)];
-}
-
-function loadImage(src: string) {
-  return new Promise<HTMLImageElement>((resolve, reject) => {
-    const image = new Image();
-    image.crossOrigin = "anonymous";
-    image.onload = () => resolve(image);
-    image.onerror = reject;
-    image.src = src;
-  });
 }
 
 function RoastBurst({ items }: { items: Array<{ id: number; text: string }> }) {
