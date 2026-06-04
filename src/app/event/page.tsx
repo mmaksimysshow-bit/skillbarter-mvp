@@ -17,6 +17,8 @@ type Skill = {
   chaos: string[];
   proof: string[];
   weakSpots: string[];
+  repairs: Record<string, string>;
+  decoyRepairs: string[];
   mentor: string;
   result: string;
 };
@@ -30,6 +32,12 @@ const skills: Skill[] = [
     chaos: ["мёртвая кнопка", "неоновый фон", "ошибка 404", "форма без отправки", "скрин успеха", "адаптив 390px", "описание результата", "папка FINAL_v9"],
     proof: ["скрин успеха", "адаптив 390px", "описание результата"],
     weakSpots: ["форма не отправляет", "нет мобильной проверки", "не показан результат"],
+    repairs: {
+      "форма не отправляет": "добавить состояние успешной отправки",
+      "нет мобильной проверки": "показать скрин на телефоне 390px",
+      "не показан результат": "описать, какую заявку получает бизнес",
+    },
+    decoyRepairs: ["добавить ещё свечения", "переименовать кнопку", "сказать что всё работает"],
     mentor: "Покажи рабочую заявку: форма, успех, мобильная версия. Тогда это не код в стол, а кейс.",
     result: "Рабочая страница заявки",
   },
@@ -41,6 +49,12 @@ const skills: Skill[] = [
     chaos: ["17 шрифтов", "понятный заголовок", "кнопка действия", "куб ради куба", "мелкий текст", "мобильный скрин", "польза на первом экране", "градиент судьбы"],
     proof: ["понятный заголовок", "кнопка действия", "мобильный скрин", "польза на первом экране"],
     weakSpots: ["кнопка потерялась", "польза не видна", "слишком много шума"],
+    repairs: {
+      "кнопка потерялась": "оставить один главный CTA",
+      "польза не видна": "переписать заголовок через результат",
+      "слишком много шума": "убрать лишний декор и эффекты",
+    },
+    decoyRepairs: ["добавить 3D-куб", "сделать текст мельче", "поставить ещё два шрифта"],
     mentor: "Оставь один фокус: заголовок, польза, кнопка. Если человек понял за 5 секунд — это кейс.",
     result: "Первый экран с понятным CTA",
   },
@@ -52,6 +66,12 @@ const skills: Skill[] = [
     chaos: ["просто вкусно", "состав", "технология", "фото подачи", "секрет шефа", "время готовки", "авторское вайбово", "пустая тарелка"],
     proof: ["состав", "технология", "фото подачи", "время готовки"],
     weakSpots: ["нет технологии", "нет состава", "нет подачи"],
+    repairs: {
+      "нет технологии": "описать шаги приготовления",
+      "нет состава": "добавить ингредиенты и граммовки",
+      "нет подачи": "показать фото и идею сервировки",
+    },
+    decoyRepairs: ["написать просто вкусно", "назвать блюдо авторским", "добавить красивую легенду"],
     mentor: "Кейс в поварском деле — это состав, технология, время и подача. Эмоция хорошо, но доказательство сильнее.",
     result: "Блюдо для меню кафе",
   },
@@ -63,6 +83,12 @@ const skills: Skill[] = [
     chaos: ["42 термина", "пример из жизни", "мини-вопрос", "простые слова", "ну очевидно же", "план урока", "ученик кивнул", "проверка понимания"],
     proof: ["пример из жизни", "мини-вопрос", "простые слова", "проверка понимания"],
     weakSpots: ["нет проверки", "слишком сложно", "нет примера"],
+    repairs: {
+      "нет проверки": "добавить мини-вопрос после объяснения",
+      "слишком сложно": "заменить термины простыми словами",
+      "нет примера": "добавить пример из жизни",
+    },
+    decoyRepairs: ["сказать это очевидно", "добавить ещё терминов", "ускорить объяснение"],
     mentor: "Сильный педагогический кейс показывает: было сложно, ты объяснил, человек понял и выполнил мини-задание.",
     result: "Мини-урок для новичка",
   },
@@ -74,6 +100,12 @@ const skills: Skill[] = [
     chaos: ["диагноз за 5 секунд", "уточняющий вопрос", "границы общения", "совет без запроса", "бережное резюме", "давление мнением", "этика", "внутренний эксперт"],
     proof: ["уточняющий вопрос", "границы общения", "бережное резюме", "этика"],
     weakSpots: ["нет границ", "не уточнён запрос", "слишком быстрый совет"],
+    repairs: {
+      "нет границ": "обозначить безопасные рамки общения",
+      "не уточнён запрос": "задать уточняющий вопрос",
+      "слишком быстрый совет": "сначала отразить и уточнить ситуацию",
+    },
+    decoyRepairs: ["поставить диагноз", "надавить авторитетом", "решить за человека"],
     mentor: "В учебной ситуации важно показать коммуникацию, этику и границы. Не лечение, не диагноз, а профессиональный разбор запроса.",
     result: "Этичный коммуникационный кейс",
   },
@@ -85,6 +117,12 @@ const skills: Skill[] = [
     chaos: ["обещание победы", "факты ситуации", "документы", "громкий голос", "правовое основание", "логика позиции", "игнор бумаг", "уверенный монолог"],
     proof: ["факты ситуации", "документы", "правовое основание", "логика позиции"],
     weakSpots: ["нет фактов", "нет основания", "документы не разобраны"],
+    repairs: {
+      "нет фактов": "собрать факты по порядку",
+      "нет основания": "найти норму или основание позиции",
+      "документы не разобраны": "проверить документы и даты",
+    },
+    decoyRepairs: ["обещать победу", "говорить увереннее", "игнорировать документы"],
     mentor: "Правовой кейс — это факты, документы и основание. Без обещаний результата и магии уверенного тона.",
     result: "Аргументированная позиция",
   },
@@ -102,6 +140,8 @@ export default function EventPage() {
   const [caught, setCaught] = useState<string[]>([]);
   const [misses, setMisses] = useState(0);
   const [fixed, setFixed] = useState<string[]>([]);
+  const [selectedSpot, setSelectedSpot] = useState<string | null>(null);
+  const [repairMistakes, setRepairMistakes] = useState(0);
   const [screamer, setScreamer] = useState(false);
   const [bossHp, setBossHp] = useState(100);
   const [bar, setBar] = useState(0);
@@ -111,6 +151,10 @@ export default function EventPage() {
 
   const skill = useMemo(() => skills.find((item) => item.id === skillId) ?? skills[0], [skillId]);
   const score = Math.min(100, 30 + caught.length * 10 + fixed.length * 12 + (100 - bossHp) / 2 - misses * 4);
+  const repairOptions = useMemo(() => {
+    if (!selectedSpot) return [];
+    return buildRepairOptions(skill, selectedSpot);
+  }, [selectedSpot, skill]);
 
   useEffect(() => {
     if (!holding || phase !== 1) return;
@@ -156,6 +200,8 @@ export default function EventPage() {
     setCaught([]);
     setMisses(0);
     setFixed([]);
+    setSelectedSpot(null);
+    setRepairMistakes(0);
     setScreamer(false);
     setBossHp(100);
     setBar(0);
@@ -193,10 +239,26 @@ export default function EventPage() {
     }
   };
 
-  const fixSpot = (spot: string) => {
+  const selectSpot = (spot: string) => {
     if (fixed.includes(spot)) return;
-    setFixed((value) => [...value, spot]);
-    setMessage(`Наставник: ${spot} — найдено. ${skill.mentor}`);
+    setSelectedSpot(spot);
+    setMessage(`Проблема выбрана: ${spot}. Теперь подбери правку, которая реально чинит кейс.`);
+  };
+
+  const applyRepair = (repair: string) => {
+    if (!selectedSpot || fixed.includes(selectedSpot)) return;
+    const correct = skill.repairs[selectedSpot] === repair;
+    if (!correct) {
+      setRepairMistakes((value) => value + 1);
+      setMisses((value) => value + 1);
+      setMessage(`Наставник: не то. «${repair}» звучит активно, но проблему «${selectedSpot}» не чинит.`);
+      if (typeof navigator !== "undefined") navigator.vibrate?.(18);
+      return;
+    }
+    const repairedSpot = selectedSpot;
+    setFixed((value) => [...value, repairedSpot]);
+    setSelectedSpot(null);
+    setMessage(`Правка принята: ${repair}. ${skill.mentor}`);
     if (fixed.length + 1 >= 3) {
       setTimeout(() => {
         setMessage("Кейс отремонтирован. Остался босс «без опыта не берём».");
@@ -206,14 +268,19 @@ export default function EventPage() {
   };
 
   const hitBoss = () => {
-    const perfect = bar >= 42 && bar <= 62;
-    const good = bar >= 30 && bar <= 74;
-    const damage = perfect ? 38 : good ? 22 : 7;
-    setBossHp((hp) => Math.max(0, hp - damage));
-    setMessage(perfect ? "Критический удар кейсом. Босс закашлялся от доказательств." : good ? "Попал. Не идеально, но опыт уже не выглядит пустым." : "Мимо тайминга. Босс сказал: «ну такое».");
-    if (bossHp - damage <= 0) {
-      setTimeout(() => setPhase(5), 700);
+    const perfect = bar >= 45 && bar <= 58;
+    if (!perfect) {
+      setMisses((value) => value + 1);
+      setMessage("Промах. Босс не засчитал: надо попасть прямо в центр зелёной зоны.");
+      if (typeof navigator !== "undefined") navigator.vibrate?.(25);
+      return;
     }
+    setBossHp((hp) => {
+      const next = Math.max(0, hp - 34);
+      if (next <= 0) setTimeout(() => setPhase(5), 700);
+      return next;
+    });
+    setMessage("Чистое попадание. Кейс ударил прямо по фразе «без опыта не берём».");
   };
 
   const shareQuest = async () => {
@@ -365,7 +432,7 @@ export default function EventPage() {
 
           {phase === 3 && (
             <Screen key="repair">
-              <Title tag="Раунд 3" title="Ремонт кейса от наставника" text="Работодатель уже посмотрел. Теперь быстро закрой 3 слабых места, пока кейс не рассыпался." />
+              <Title tag="Раунд 3" title="Ремонт кейса от наставника" text="Теперь не просто тыкай ошибки. Сначала выбери слабое место, потом подбери правку, которая реально его чинит." />
               <div className="grid gap-5 lg:grid-cols-[1.08fr_.92fr]">
                 <div className="relative min-h-[520px] overflow-hidden rounded-[34px] border border-white/10 bg-gradient-to-br from-white/[0.12] to-white/[0.035] p-5">
                   <div className="rounded-[28px] border border-white/12 bg-black/25 p-5">
@@ -380,22 +447,37 @@ export default function EventPage() {
                   {skill.weakSpots.map((spot, index) => (
                     <motion.button
                       key={spot}
-                      onClick={() => fixSpot(spot)}
+                      onClick={() => selectSpot(spot)}
                       disabled={fixed.includes(spot)}
-                      className="absolute rounded-[24px] border border-amber-200/70 bg-amber-300/18 px-3 py-2 text-xs font-black text-amber-50 shadow-[0_0_34px_rgba(251,191,36,.28)] disabled:border-emerald-200/60 disabled:bg-emerald-400/18"
+                      className={`absolute rounded-[24px] border px-3 py-2 text-xs font-black shadow-[0_0_34px_rgba(251,191,36,.28)] disabled:border-emerald-200/60 disabled:bg-emerald-400/18 ${selectedSpot === spot ? "border-fuchsia-200 bg-fuchsia-400/25 text-fuchsia-50" : "border-amber-200/70 bg-amber-300/18 text-amber-50"}`}
                       style={{ left: `${14 + index * 25}%`, top: `${34 + (index % 2) * 28}%` }}
                       animate={{ scale: fixed.includes(spot) ? 1 : [1, 1.06, 1] }}
                       transition={{ repeat: fixed.includes(spot) ? 0 : Infinity, duration: 1 }}
                     >
-                      {fixed.includes(spot) ? "починено" : "сломано"}: {spot}
+                      {fixed.includes(spot) ? "починено" : selectedSpot === spot ? "выбрано" : "сломано"}: {spot}
                     </motion.button>
                   ))}
                 </div>
                 <Panel title="Чат наставника">
                   <Meme title="Наставник" face="🧠" text={message} />
+                  <div className="mt-4 rounded-[24px] border border-white/10 bg-black/20 p-4">
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-fuchsia-100">выбранная проблема</p>
+                    <p className="mt-2 text-lg font-black">{selectedSpot ?? "тапни слабое место на черновике"}</p>
+                  </div>
+                  {selectedSpot && (
+                    <div className="mt-4 grid gap-3">
+                      {repairOptions.map((repair, index) => (
+                        <button key={repair} onClick={() => applyRepair(repair)} className="min-h-[68px] rounded-[22px] border border-white/10 bg-white/[0.06] p-3 text-left text-sm font-bold transition hover:border-cyan-200/40 active:scale-[0.97]">
+                          <span className="mr-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-xs font-black">{index + 1}</span>
+                          {repair}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <div className="mt-4 space-y-3">
                     {fixed.map((item) => <div key={item} className="rounded-2xl border border-emerald-300/20 bg-emerald-400/10 p-3 text-sm font-bold text-emerald-50">+ {item}</div>)}
                   </div>
+                  <p className="mt-3 text-sm text-white/50">Ошибок в правках: {repairMistakes}</p>
                 </Panel>
               </div>
             </Screen>
@@ -403,7 +485,7 @@ export default function EventPage() {
 
           {phase === 4 && (
             <Screen key="boss">
-              <Title tag="Раунд 4" title="Босс-файт: «Без опыта не берём»" text="Жми «ударить кейсом», когда индикатор в светлой зоне. Это уже не выбор — это тайминг." />
+              <Title tag="Раунд 4" title="Босс-файт: «Без опыта не берём»" text="Теперь засчитывается только центр зелёной зоны. Рядом не считается: босс вредный." />
               <div className="grid flex-1 items-center gap-5 lg:grid-cols-[.95fr_1.05fr]">
                 <div className="rounded-[36px] border border-red-300/25 bg-red-500/10 p-5 text-center">
                   <Meme title={bossHp <= 0 ? "Босс повержен" : "Без опыта не берём"} face={bossHp <= 0 ? "💀" : "😤"} text={bossHp <= 0 ? "доказательства победили скепсис" : "покажи кейс, а не красивые обещания"} />
@@ -414,7 +496,8 @@ export default function EventPage() {
                 </div>
                 <Panel title="Тайминг удара">
                   <div className="relative h-12 overflow-hidden rounded-full bg-white/10">
-                    <div className="absolute left-[42%] top-0 h-full w-[20%] bg-emerald-300/25" />
+                    <div className="absolute left-[45%] top-0 h-full w-[13%] bg-emerald-300/30" />
+                    <div className="absolute left-[50.5%] top-0 h-full w-[2px] bg-white/70" />
                     <motion.div className="absolute top-0 h-full w-2 rounded-full bg-cyan-200 shadow-[0_0_24px_rgba(103,232,249,.8)]" animate={{ left: `${bar}%` }} />
                   </div>
                   <Primary className="mt-5 w-full" onClick={hitBoss}>
@@ -491,6 +574,15 @@ function randomBad(item: string) {
     `${item}: это вайб, но не доказательство.`,
   ];
   return messages[Math.floor(Math.random() * messages.length)];
+}
+
+function buildRepairOptions(skill: Skill, spot: string) {
+  const correct = skill.repairs[spot];
+  const decoys = skill.decoyRepairs;
+  const index = Math.max(0, skill.weakSpots.indexOf(spot));
+  if (index % 3 === 0) return [decoys[1], correct, decoys[0], decoys[2]];
+  if (index % 3 === 1) return [decoys[2], decoys[0], correct, decoys[1]];
+  return [correct, decoys[1], decoys[2], decoys[0]];
 }
 
 function Screen({ children }: { children: React.ReactNode }) {
@@ -607,3 +699,4 @@ function Benefit({ title, text }: { title: string; text: string }) {
     </div>
   );
 }
+
