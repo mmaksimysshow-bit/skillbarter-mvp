@@ -171,10 +171,12 @@ export default function EventPage() {
   const [surrendered, setSurrendered] = useState(false);
   const [photo, setPhoto] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState("");
+  const [roasts, setRoasts] = useState<Array<{ id: number; text: string }>>([]);
   const barRef = useRef(0);
   const barDirectionRef = useRef(1);
   const audioRef = useRef<AudioContext | null>(null);
-  const musicRef = useRef<{ oscillators: OscillatorNode[]; gain: GainNode; melody: number } | null>(null);
+  const musicRef = useRef<{ melody: number } | null>(null);
+  const fartRef = useRef<HTMLAudioElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -257,6 +259,7 @@ export default function EventPage() {
     setSurrendered(false);
     setPhoto(null);
     setCameraError("");
+    setRoasts([]);
     stopCamera();
   };
 
@@ -273,7 +276,9 @@ export default function EventPage() {
     if (!good) {
       setMisses((value) => value + 1);
       setCaught([]);
-      setMessage(`${randomBad(item)} ${roast()} Раунд сброшен: собери пруфы заново.`);
+      const burn = roast();
+      setMessage(`${randomBad(item)} ${burn} Раунд сброшен: собери пруфы заново.`);
+      spawnRoast(burn);
       playFart();
       if (typeof navigator !== "undefined") navigator.vibrate?.(22);
       return;
@@ -310,7 +315,9 @@ export default function EventPage() {
       setMisses((value) => value + 1);
       setFixed([]);
       setSelectedSpot(null);
-      setMessage(`Наставник: не то. «${repair}» проблему не чинит. ${roast()} Ремонт сброшен к нулю.`);
+      const burn = roast();
+      setMessage(`Наставник: не то. «${repair}» проблему не чинит. ${burn} Ремонт сброшен к нулю.`);
+      spawnRoast(burn);
       playFart();
       if (typeof navigator !== "undefined") navigator.vibrate?.(18);
       return;
@@ -337,7 +344,9 @@ export default function EventPage() {
       setBar(0);
       barRef.current = 0;
       barDirectionRef.current = 1;
-      setMessage(`Промах (${Math.round(currentBar)}%). ${roast()} Босс полностью восстановился: бей только по белой линии.`);
+      const burn = roast();
+      setMessage(`Промах (${Math.round(currentBar)}%). ${burn} Босс полностью восстановился: бей только по белой линии.`);
+      spawnRoast(burn);
       playFart();
       if (typeof navigator !== "undefined") navigator.vibrate?.(25);
       return;
@@ -354,8 +363,17 @@ export default function EventPage() {
   const surrender = () => {
     setSurrendered(true);
     setMessage("Сдался? Ладно, бот, Skill ID всё равно покажем, но сверху будет позорная печать.");
+    spawnRoast("Сдался бот. Но хотя бы честный.");
     playFart();
     setTimeout(() => setPhase(5), 360);
+  };
+
+  const spawnRoast = (text: string) => {
+    const id = Date.now() + Math.random();
+    setRoasts((items) => [...items.slice(-3), { id, text }]);
+    window.setTimeout(() => {
+      setRoasts((items) => items.filter((item) => item.id !== id));
+    }, 1900);
   };
 
   const initAudio = () => {
@@ -363,6 +381,8 @@ export default function EventPage() {
     const AudioCtor = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AudioCtor) return;
     audioRef.current = new AudioCtor();
+    fartRef.current = new Audio("/sounds/fart-with-reverb.mp3");
+    fartRef.current.volume = 0.72;
   };
 
   const playTone = (frequency: number, duration = 0.08, type: OscillatorType = "sine", volume = 0.04) => {
@@ -389,8 +409,15 @@ export default function EventPage() {
     window.setTimeout(() => playTone(930, 0.1, "triangle", 0.035), 80);
   };
   const playFart = () => {
-    playTone(96, 0.12, "sawtooth", 0.065);
-    window.setTimeout(() => playTone(62, 0.18, "square", 0.045), 85);
+    const fart = fartRef.current;
+    if (fart) {
+      fart.currentTime = 0;
+      void fart.play().catch(() => {
+        playTone(86, 0.16, "sawtooth", 0.06);
+      });
+      return;
+    }
+    playTone(86, 0.16, "sawtooth", 0.06);
   };
   const playScreamer = () => {
     playTone(80, 0.12, "sawtooth", 0.08);
@@ -400,44 +427,21 @@ export default function EventPage() {
   const startMusic = () => {
     const audio = audioRef.current;
     if (!audio || musicRef.current) return;
-    const osc = audio.createOscillator();
-    const pad = audio.createOscillator();
-    const shimmer = audio.createOscillator();
-    const gain = audio.createGain();
-    osc.type = "sine";
-    pad.type = "triangle";
-    shimmer.type = "sine";
-    osc.frequency.value = 196;
-    pad.frequency.value = 246.94;
-    shimmer.frequency.value = 392;
-    gain.gain.value = 0.018;
-    osc.connect(gain);
-    pad.connect(gain);
-    shimmer.connect(gain);
-    gain.connect(audio.destination);
-    osc.start();
-    pad.start();
-    shimmer.start();
-    const notes = [392, 440, 493.88, 587.33, 493.88, 440];
+    const notes = [261.63, 329.63, 392, 493.88, 440, 392, 329.63, 293.66];
     let step = 0;
     const melody = window.setInterval(() => {
-      playTone(notes[step % notes.length], 0.16, "sine", 0.018);
+      const note = notes[step % notes.length];
+      playTone(note, 0.2, "sine", 0.016);
+      if (step % 4 === 0) playTone(note / 2, 0.45, "triangle", 0.012);
       step += 1;
-    }, 720);
-    musicRef.current = { oscillators: [osc, pad, shimmer], gain, melody };
+    }, 520);
+    musicRef.current = { melody };
   };
 
   const stopMusic = () => {
     const music = musicRef.current;
     if (!music) return;
     window.clearInterval(music.melody);
-    music.oscillators.forEach((osc) => {
-      try {
-        osc.stop();
-      } catch {
-        // already stopped
-      }
-    });
     musicRef.current = null;
   };
 
@@ -476,8 +480,28 @@ export default function EventPage() {
     if (!ctx) return;
     ctx.filter = "contrast(1.25) saturate(1.6) hue-rotate(18deg)";
     ctx.drawImage(video, 0, 0, width, height);
-    ctx.fillStyle = "rgba(217,70,239,.28)";
+    ctx.filter = "none";
+    const cx = width / 2;
+    const cy = height / 2;
+    ctx.fillStyle = "rgba(217,70,239,.16)";
     ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = "rgba(0,0,0,.78)";
+    ctx.fillRect(cx - width * 0.22, cy - height * 0.16, width * 0.16, height * 0.065);
+    ctx.fillRect(cx + width * 0.06, cy - height * 0.16, width * 0.16, height * 0.065);
+    ctx.fillRect(cx - width * 0.06, cy - height * 0.135, width * 0.12, height * 0.025);
+    ctx.strokeStyle = "rgba(0,0,0,.86)";
+    ctx.lineWidth = Math.max(8, width / 55);
+    ctx.beginPath();
+    ctx.moveTo(cx - width * 0.03, cy + height * 0.09);
+    ctx.quadraticCurveTo(cx - width * 0.13, cy + height * 0.14, cx - width * 0.24, cy + height * 0.09);
+    ctx.moveTo(cx + width * 0.03, cy + height * 0.09);
+    ctx.quadraticCurveTo(cx + width * 0.13, cy + height * 0.14, cx + width * 0.24, cy + height * 0.09);
+    ctx.stroke();
+    ctx.fillStyle = "rgba(34,211,238,.9)";
+    ctx.font = `${Math.max(24, width / 15)}px sans-serif`;
+    ctx.fillText("SKILL NPC", 24, 52);
+    ctx.fillStyle = "rgba(255,255,255,.9)";
+    ctx.fillText("мемный фильтр +100 к вайбу", 24, 92);
     ctx.fillStyle = "white";
     ctx.font = `${Math.max(28, width / 13)}px sans-serif`;
     ctx.fillText(surrendered ? "СДАЛСЯ БОТ" : "КРАСАВЧИК UwU", 24, height - 32);
@@ -510,6 +534,7 @@ export default function EventPage() {
       </div>
 
       <section className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 pb-6 pt-4 sm:px-6">
+        <RoastBurst items={roasts} />
         <header className="mb-4 rounded-[28px] border border-white/10 bg-white/[0.06] p-3 shadow-2xl shadow-violet-950/40 backdrop-blur-xl">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
@@ -759,7 +784,7 @@ export default function EventPage() {
                     <canvas ref={canvasRef} className="hidden" />
                     {cameraError && <p className="mt-2 text-sm text-red-200">{cameraError}</p>}
                     <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                      <Secondary onClick={startCamera}>Включить камеру</Secondary>
+                      <Secondary onClick={photo ? () => { setPhoto(null); startCamera(); } : startCamera}>{photo ? "Перефоткаться" : "Включить камеру"}</Secondary>
                       <Secondary onClick={capturePhoto}>Сфоткать Skill ID</Secondary>
                     </div>
                     <p className="mt-2 text-xs text-white/52">
@@ -814,8 +839,39 @@ function roast() {
     "Минус вайб, плюс попытка.",
     "Навык есть, попадание пока на картошке.",
     "Рынок сделал facepalm.",
+    "Ты сейчас играешь как Wi-Fi в подвале.",
+    "Это было уверенно, но мимо.",
+    "Работодатель моргнул и закрыл вкладку.",
+    "Кейс плачет в углу.",
+    "Портфолио попросило не позорить.",
+    "Минус репутация, плюс опыт.",
+    "Наставник тяжело вдохнул.",
+    "Это не провал, это обучающий шлёпок.",
+    "Пруфы ушли пить чай.",
+    "Босс сказал: попробуй руками.",
   ];
   return lines[Math.floor(Math.random() * lines.length)];
+}
+
+function RoastBurst({ items }: { items: Array<{ id: number; text: string }> }) {
+  return (
+    <div className="pointer-events-none fixed inset-0 z-40 overflow-hidden">
+      <AnimatePresence>
+        {items.map((item, index) => (
+          <motion.div
+            key={item.id}
+            initial={{ opacity: 0, scale: 0.7, y: 30, rotate: -6 }}
+            animate={{ opacity: 1, scale: 1, y: 0, rotate: index % 2 ? 5 : -5 }}
+            exit={{ opacity: 0, scale: 0.85, y: -40 }}
+            className="absolute rounded-[24px] border border-red-200/50 bg-red-500/90 px-4 py-3 text-sm font-black text-white shadow-[0_0_42px_rgba(239,68,68,.45)]"
+            style={{ left: `${12 + index * 24}%`, top: `${24 + index * 16}%`, maxWidth: 260 }}
+          >
+            {item.text}
+          </motion.div>
+        ))}
+      </AnimatePresence>
+    </div>
+  );
 }
 
 function buildRepairOptions(skill: Skill, spot: string) {
