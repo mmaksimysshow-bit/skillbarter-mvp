@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, ChefHat, Code2, Fingerprint, GraduationCap, HeartHandshake, Palette, RefreshCcw, Scale, ShieldCheck, Zap } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -29,8 +29,8 @@ const skills: Skill[] = [
     title: "Программирование",
     icon: Code2,
     mission: "Собери доказательства, что страница заявки реально работает, а не просто красиво светится.",
-    chaos: ["мёртвая кнопка", "неоновый фон", "ошибка 404", "форма без отправки", "скрин успеха", "адаптив 390px", "описание результата", "папка FINAL_v9"],
-    proof: ["скрин успеха", "адаптив 390px", "описание результата"],
+    chaos: ["мёртвая кнопка", "неоновый фон", "ошибка 404", "форма без отправки", "скрин успеха", "адаптив 390px", "описание результата", "запись заявки", "папка FINAL_v9"],
+    proof: ["скрин успеха", "адаптив 390px", "описание результата", "запись заявки"],
     weakSpots: ["форма не отправляет", "нет мобильной проверки", "не показан результат"],
     repairs: {
       "форма не отправляет": "добавить состояние успешной отправки",
@@ -148,8 +148,10 @@ export default function EventPage() {
   const [dir, setDir] = useState(1);
   const [message, setMessage] = useState("Собери навык, докажи его кейсом и выбей возможность.");
   const [shared, setShared] = useState(false);
+  const barRef = useRef(0);
 
   const skill = useMemo(() => skills.find((item) => item.id === skillId) ?? skills[0], [skillId]);
+  const requiredProofs = Math.min(4, skill.proof.length);
   const score = Math.min(100, 30 + caught.length * 10 + fixed.length * 12 + (100 - bossHp) / 2 - misses * 4);
   const repairOptions = useMemo(() => {
     if (!selectedSpot) return [];
@@ -185,6 +187,7 @@ export default function EventPage() {
           next = 0;
           setDir(1);
         }
+        barRef.current = next;
         return next;
       });
     }, 44);
@@ -205,6 +208,7 @@ export default function EventPage() {
     setScreamer(false);
     setBossHp(100);
     setBar(0);
+    barRef.current = 0;
     setDir(1);
     setMessage("Собери навык, докажи его кейсом и выбей возможность.");
     setShared(false);
@@ -226,7 +230,7 @@ export default function EventPage() {
     if (caught.includes(item)) return;
     setCaught((value) => [...value, item]);
     setMessage(randomGood(item));
-    if (caught.length + 1 >= 3) {
+    if (caught.length + 1 >= requiredProofs) {
       setTimeout(() => {
         setScreamer(true);
         if (typeof navigator !== "undefined") navigator.vibrate?.([30, 20, 30]);
@@ -268,15 +272,17 @@ export default function EventPage() {
   };
 
   const hitBoss = () => {
-    const perfect = bar >= 45 && bar <= 58;
+    const currentBar = barRef.current;
+    const perfect = currentBar >= 49 && currentBar <= 52;
     if (!perfect) {
       setMisses((value) => value + 1);
-      setMessage("Промах. Босс не засчитал: надо попасть прямо в центр зелёной зоны.");
+      setBossHp((hp) => Math.min(100, hp + 4));
+      setMessage(`Промах (${Math.round(currentBar)}%). Босс не засчитал: цель — белая линия в центре.`);
       if (typeof navigator !== "undefined") navigator.vibrate?.(25);
       return;
     }
     setBossHp((hp) => {
-      const next = Math.max(0, hp - 34);
+      const next = Math.max(0, hp - 25);
       if (next <= 0) setTimeout(() => setPhase(5), 700);
       return next;
     });
@@ -399,7 +405,7 @@ export default function EventPage() {
 
           {phase === 2 && (
             <Screen key="catch">
-              <Title tag="Раунд 2" title="Лови пруфы, не мусор" text="На экране хаос проекта. Тапай только то, что можно показать как доказательство навыка. Нужно 3 пруфа." />
+              <Title tag="Раунд 2" title="Лови пруфы, не мусор" text={`На экране хаос проекта. Тапай только то, что можно показать как доказательство навыка. Нужно ${requiredProofs} пруфа.`} />
               <div className="grid gap-5 lg:grid-cols-[1.1fr_.9fr]">
                 <motion.div className="relative min-h-[520px] overflow-hidden rounded-[34px] border border-white/10 bg-white/[0.055] p-4" animate={misses ? { x: [0, -4, 4, 0] } : { x: 0 }}>
                   {skill.chaos.map((item, index) => (
@@ -420,9 +426,9 @@ export default function EventPage() {
                 <Panel title="Радар кейса">
                   <div className="space-y-4">
                     <Meme title="Реакция" face={misses > 1 ? "🫠" : "👀"} text={message} />
-                    <Meter label="Пруфы" value={(caught.length / 3) * 100} />
+                    <Meter label="Пруфы" value={(caught.length / requiredProofs) * 100} />
                     <Meter label="Доверие" value={score} />
-                    <p className="text-sm text-white/58">Поймано: {caught.length}/3. Ошибки: {misses}</p>
+                    <p className="text-sm text-white/58">Поймано: {caught.length}/{requiredProofs}. Ошибки: {misses}</p>
                   </div>
                 </Panel>
               </div>
@@ -485,7 +491,7 @@ export default function EventPage() {
 
           {phase === 4 && (
             <Screen key="boss">
-              <Title tag="Раунд 4" title="Босс-файт: «Без опыта не берём»" text="Теперь засчитывается только центр зелёной зоны. Рядом не считается: босс вредный." />
+              <Title tag="Раунд 4" title="Босс-файт: «Без опыта не берём»" text="Теперь засчитывается только белая линия в центре. Серые зоны и края не считаются: босс вредный." />
               <div className="grid flex-1 items-center gap-5 lg:grid-cols-[.95fr_1.05fr]">
                 <div className="rounded-[36px] border border-red-300/25 bg-red-500/10 p-5 text-center">
                   <Meme title={bossHp <= 0 ? "Босс повержен" : "Без опыта не берём"} face={bossHp <= 0 ? "💀" : "😤"} text={bossHp <= 0 ? "доказательства победили скепсис" : "покажи кейс, а не красивые обещания"} />
@@ -496,10 +502,12 @@ export default function EventPage() {
                 </div>
                 <Panel title="Тайминг удара">
                   <div className="relative h-12 overflow-hidden rounded-full bg-white/10">
-                    <div className="absolute left-[45%] top-0 h-full w-[13%] bg-emerald-300/30" />
-                    <div className="absolute left-[50.5%] top-0 h-full w-[2px] bg-white/70" />
-                    <motion.div className="absolute top-0 h-full w-2 rounded-full bg-cyan-200 shadow-[0_0_24px_rgba(103,232,249,.8)]" animate={{ left: `${bar}%` }} />
+                    <div className="absolute left-[44%] top-0 h-full w-[14%] bg-zinc-400/20" />
+                    <div className="absolute left-[49%] top-0 h-full w-[3%] bg-emerald-300/30" />
+                    <div className="absolute left-[50.5%] top-0 h-full w-[2px] bg-white shadow-[0_0_18px_rgba(255,255,255,.9)]" />
+                    <div className="absolute top-0 h-full w-2 -translate-x-1/2 rounded-full bg-cyan-200 shadow-[0_0_24px_rgba(103,232,249,.8)]" style={{ left: `${bar}%` }} />
                   </div>
+                  <p className="mt-2 text-center text-xs font-black uppercase tracking-[0.16em] text-white/50">попади в белую линию, не в серую область</p>
                   <Primary className="mt-5 w-full" onClick={hitBoss}>
                     Ударить кейсом <Zap size={18} />
                   </Primary>
