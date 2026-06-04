@@ -133,18 +133,21 @@ const goals = ["Заказы", "Работа", "Портфолио", "Рост"]
 const memeImages = [
   {
     title: "рынок смотрит",
-    src: "https://commons.wikimedia.org/wiki/Special:FilePath/Get_a_load_of_this_guy_(meme).jpg",
+    src: "https://commons.wikimedia.org/wiki/Special:FilePath/Disapproving_face.jpg",
     caption: "когда вместо кейса снова «я умею»",
+    fallback: "😐",
   },
   {
     title: "босс злится",
     src: "https://commons.wikimedia.org/wiki/Special:FilePath/Rage_face.png",
     caption: "без пруфов он не пропускает",
+    fallback: "😤",
   },
   {
     title: "live reaction",
-    src: "https://commons.wikimedia.org/wiki/Special:FilePath/Live_Reaction_meme_template.png",
+    src: "https://commons.wikimedia.org/wiki/Special:FilePath/Surprised_face.jpg",
     caption: "работодатель увидел Skill ID",
+    fallback: "👀",
   },
 ];
 
@@ -165,10 +168,16 @@ export default function EventPage() {
   const [bar, setBar] = useState(0);
   const [message, setMessage] = useState("Собери навык, докажи его кейсом и выбей возможность.");
   const [shared, setShared] = useState(false);
+  const [surrendered, setSurrendered] = useState(false);
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [cameraError, setCameraError] = useState("");
   const barRef = useRef(0);
   const barDirectionRef = useRef(1);
   const audioRef = useRef<AudioContext | null>(null);
-  const musicRef = useRef<{ osc: OscillatorNode; gain: GainNode } | null>(null);
+  const musicRef = useRef<{ oscillators: OscillatorNode[]; gain: GainNode; melody: number } | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const skill = useMemo(() => skills.find((item) => item.id === skillId) ?? skills[0], [skillId]);
   const requiredProofs = Math.min(4, skill.proof.length);
@@ -177,6 +186,13 @@ export default function EventPage() {
     if (!selectedSpot) return [];
     return buildRepairOptions(skill, selectedSpot);
   }, [selectedSpot, skill]);
+
+  useEffect(() => {
+    return () => {
+      stopMusic();
+      stopCamera();
+    };
+  }, []);
 
   useEffect(() => {
     if (!holding || phase !== 1) return;
@@ -238,6 +254,10 @@ export default function EventPage() {
     barDirectionRef.current = 1;
     setMessage("Собери навык, докажи его кейсом и выбей возможность.");
     setShared(false);
+    setSurrendered(false);
+    setPhoto(null);
+    setCameraError("");
+    stopCamera();
   };
 
   const startGame = () => {
@@ -253,8 +273,8 @@ export default function EventPage() {
     if (!good) {
       setMisses((value) => value + 1);
       setCaught([]);
-      setMessage(`${randomBad(item)} Раунд сброшен: собери пруфы заново.`);
-      playError();
+      setMessage(`${randomBad(item)} ${roast()} Раунд сброшен: собери пруфы заново.`);
+      playFart();
       if (typeof navigator !== "undefined") navigator.vibrate?.(22);
       return;
     }
@@ -290,8 +310,8 @@ export default function EventPage() {
       setMisses((value) => value + 1);
       setFixed([]);
       setSelectedSpot(null);
-      setMessage(`Наставник: не то. «${repair}» проблему не чинит. Ремонт сброшен к нулю.`);
-      playError();
+      setMessage(`Наставник: не то. «${repair}» проблему не чинит. ${roast()} Ремонт сброшен к нулю.`);
+      playFart();
       if (typeof navigator !== "undefined") navigator.vibrate?.(18);
       return;
     }
@@ -317,8 +337,8 @@ export default function EventPage() {
       setBar(0);
       barRef.current = 0;
       barDirectionRef.current = 1;
-      setMessage(`Промах (${Math.round(currentBar)}%). Босс полностью восстановился: бей только по белой линии.`);
-      playError();
+      setMessage(`Промах (${Math.round(currentBar)}%). ${roast()} Босс полностью восстановился: бей только по белой линии.`);
+      playFart();
       if (typeof navigator !== "undefined") navigator.vibrate?.(25);
       return;
     }
@@ -329,6 +349,13 @@ export default function EventPage() {
     });
     setMessage("Чистое попадание. Кейс ударил прямо по фразе «без опыта не берём».");
     playSuccess();
+  };
+
+  const surrender = () => {
+    setSurrendered(true);
+    setMessage("Сдался? Ладно, бот, Skill ID всё равно покажем, но сверху будет позорная печать.");
+    playFart();
+    setTimeout(() => setPhase(5), 360);
   };
 
   const initAudio = () => {
@@ -353,12 +380,18 @@ export default function EventPage() {
     osc.stop(audio.currentTime + duration);
   };
 
-  const playClick = () => playTone(720, 0.06, "square", 0.035);
+  const playClick = () => {
+    playTone(760, 0.045, "square", 0.035);
+    window.setTimeout(() => playTone(1180, 0.04, "triangle", 0.025), 45);
+  };
   const playSuccess = () => {
     playTone(620, 0.08, "triangle", 0.04);
     window.setTimeout(() => playTone(930, 0.1, "triangle", 0.035), 80);
   };
-  const playError = () => playTone(120, 0.16, "sawtooth", 0.055);
+  const playFart = () => {
+    playTone(96, 0.12, "sawtooth", 0.065);
+    window.setTimeout(() => playTone(62, 0.18, "square", 0.045), 85);
+  };
   const playScreamer = () => {
     playTone(80, 0.12, "sawtooth", 0.08);
     window.setTimeout(() => playTone(980, 0.18, "square", 0.075), 90);
@@ -368,14 +401,89 @@ export default function EventPage() {
     const audio = audioRef.current;
     if (!audio || musicRef.current) return;
     const osc = audio.createOscillator();
+    const pad = audio.createOscillator();
+    const shimmer = audio.createOscillator();
     const gain = audio.createGain();
-    osc.type = "sawtooth";
-    osc.frequency.value = 52;
-    gain.gain.value = 0.012;
+    osc.type = "sine";
+    pad.type = "triangle";
+    shimmer.type = "sine";
+    osc.frequency.value = 196;
+    pad.frequency.value = 246.94;
+    shimmer.frequency.value = 392;
+    gain.gain.value = 0.018;
     osc.connect(gain);
+    pad.connect(gain);
+    shimmer.connect(gain);
     gain.connect(audio.destination);
     osc.start();
-    musicRef.current = { osc, gain };
+    pad.start();
+    shimmer.start();
+    const notes = [392, 440, 493.88, 587.33, 493.88, 440];
+    let step = 0;
+    const melody = window.setInterval(() => {
+      playTone(notes[step % notes.length], 0.16, "sine", 0.018);
+      step += 1;
+    }, 720);
+    musicRef.current = { oscillators: [osc, pad, shimmer], gain, melody };
+  };
+
+  const stopMusic = () => {
+    const music = musicRef.current;
+    if (!music) return;
+    window.clearInterval(music.melody);
+    music.oscillators.forEach((osc) => {
+      try {
+        osc.stop();
+      } catch {
+        // already stopped
+      }
+    });
+    musicRef.current = null;
+  };
+
+  const startCamera = async () => {
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+      setCameraError("Камера не доступна в этом браузере.");
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+      setCameraError("");
+    } catch {
+      setCameraError("Камера не включилась. Браузер сказал: нет.");
+    }
+  };
+
+  const stopCamera = () => {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+  };
+
+  const capturePhoto = () => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return;
+    const width = video.videoWidth || 480;
+    const height = video.videoHeight || 480;
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.filter = "contrast(1.25) saturate(1.6) hue-rotate(18deg)";
+    ctx.drawImage(video, 0, 0, width, height);
+    ctx.fillStyle = "rgba(217,70,239,.28)";
+    ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = "white";
+    ctx.font = `${Math.max(28, width / 13)}px sans-serif`;
+    ctx.fillText(surrendered ? "СДАЛСЯ БОТ" : "КРАСАВЧИК UwU", 24, height - 32);
+    setPhoto(canvas.toDataURL("image/png"));
+    stopCamera();
+    playSuccess();
   };
 
   const shareQuest = async () => {
@@ -601,6 +709,9 @@ export default function EventPage() {
                   <Primary className="mt-5 w-full" onClick={hitBoss}>
                     Ударить кейсом <Zap size={18} />
                   </Primary>
+                  <button onClick={surrender} className="mt-3 min-h-11 w-full rounded-full border border-red-300/30 bg-red-500/10 px-4 py-2 text-sm font-black text-red-100 transition active:scale-[0.98]">
+                    Сдаться и получить позорный Skill ID
+                  </button>
                   <Meme title="Боевой лог" face="⚔️" text={message} />
                 </Panel>
               </div>
@@ -612,10 +723,13 @@ export default function EventPage() {
               <div className="grid flex-1 items-center gap-5 lg:grid-cols-[.9fr_1.1fr]">
                 <div>
                   <Badge>финал</Badge>
+                  <div className={`mt-4 inline-flex rounded-full px-4 py-2 text-sm font-black uppercase tracking-[0.16em] ${surrendered ? "bg-red-500 text-white shadow-[0_0_34px_rgba(239,68,68,.45)]" : "bg-emerald-400 text-black shadow-[0_0_34px_rgba(52,211,153,.35)]"}`}>
+                    {surrendered ? "СДАЛСЯ БОТ" : "КРАСАВЧИК WW UwU"}
+                  </div>
                   <h1 className="mt-4 text-4xl font-black leading-tight sm:text-6xl">SKILL ID ACTIVATED</h1>
                   <p className="mt-4 text-lg text-white/72">Не просто: «я умею». А: «вот что я сделал».</p>
                   <div className="mt-5 grid gap-3">
-                    <Meme title="Кейс разблокирован" face="⚡" text="Теперь навык можно показать заказчику, наставнику или работодателю." />
+                    <Meme title={surrendered ? "Кейс открыт в режиме бота" : "Кейс разблокирован"} face={surrendered ? "🤖" : "⚡"} text={surrendered ? "Ты сдался, но понял механику: без кейса рынок не верит." : "Теперь навык можно показать заказчику, наставнику или работодателю."} />
                     <Meme title="Портфолио ожило" face="📁" text="Пустая папка больше не смотрит осуждающе." />
                   </div>
                 </div>
@@ -632,6 +746,25 @@ export default function EventPage() {
                     <Info label="Направление" value={skill.title} />
                     <Info label="Кейс" value={skill.result} />
                     <Info label="Доверие" value={`${Math.round(score)}%`} />
+                  </div>
+                  <div className="mt-5 rounded-[28px] border border-white/10 bg-black/24 p-4">
+                    <p className="text-sm font-black uppercase tracking-[0.16em] text-fuchsia-100">фото в Skill ID</p>
+                    <div className="mt-3 overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.04]">
+                      {photo ? (
+                        <img src={photo} alt="Фото Skill ID" className="h-56 w-full object-cover" />
+                      ) : (
+                        <video ref={videoRef} muted playsInline className="h-56 w-full bg-black object-cover" />
+                      )}
+                    </div>
+                    <canvas ref={canvasRef} className="hidden" />
+                    {cameraError && <p className="mt-2 text-sm text-red-200">{cameraError}</p>}
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      <Secondary onClick={startCamera}>Включить камеру</Secondary>
+                      <Secondary onClick={capturePhoto}>Сфоткать Skill ID</Secondary>
+                    </div>
+                    <p className="mt-2 text-xs text-white/52">
+                      {photo ? "Фото добавлено с мемным фильтром. Теперь это почти документ эпохи." : "Можно сделать фото, и оно появится прямо в твоём Skill ID."}
+                    </p>
                   </div>
                   <div className="mt-5 grid gap-3 sm:grid-cols-3">
                     <Benefit title="Заработок" text="с кейсом проще получить первый заказ" />
@@ -672,6 +805,17 @@ function randomBad(item: string) {
     `${item}: это вайб, но не доказательство.`,
   ];
   return messages[Math.floor(Math.random() * messages.length)];
+}
+
+function roast() {
+  const lines = [
+    "Фу, лох-момент.",
+    "Ботяра, соберись.",
+    "Минус вайб, плюс попытка.",
+    "Навык есть, попадание пока на картошке.",
+    "Рынок сделал facepalm.",
+  ];
+  return lines[Math.floor(Math.random() * lines.length)];
 }
 
 function buildRepairOptions(skill: Skill, spot: string) {
@@ -758,8 +902,9 @@ function InternetMemeWall() {
     <div className="mt-5 grid gap-3 sm:grid-cols-3">
       {memeImages.map((meme, index) => (
         <motion.div key={meme.title} initial={{ opacity: 0, y: 12, rotate: index % 2 ? 2 : -2 }} animate={{ opacity: 1, y: 0, rotate: index % 2 ? -1 : 1 }} transition={{ delay: index * 0.08 }} className="overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.06]">
-          <div className="h-24 bg-black/40">
-            <img src={meme.src} alt={meme.title} className="h-full w-full object-contain p-2" loading="lazy" referrerPolicy="no-referrer" />
+          <div className="relative grid h-24 place-items-center bg-black/40">
+            <div className="absolute text-5xl opacity-60">{meme.fallback}</div>
+            <img src={meme.src} alt={meme.title} className="relative h-full w-full object-contain p-2" loading="lazy" referrerPolicy="no-referrer" onError={(event) => { event.currentTarget.style.display = "none"; }} />
           </div>
           <div className="p-3">
             <p className="text-sm font-black">{meme.title}</p>
