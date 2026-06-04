@@ -151,6 +151,7 @@ export default function EventPage() {
   const [skillId, setSkillId] = useState<SkillId>("code");
   const [swipeIndex, setSwipeIndex] = useState(0);
   const [swipeDone, setSwipeDone] = useState(false);
+  const [swipeLocked, setSwipeLocked] = useState(false);
   const [message, setMessage] = useState("Свайпай: влево — просто слова, вправо — реальный кейс.");
   const [stack, setStack] = useState<string[]>([]);
   const [shake, setShake] = useState(false);
@@ -178,6 +179,7 @@ export default function EventPage() {
     setSkillId("code");
     setSwipeIndex(0);
     setSwipeDone(false);
+    setSwipeLocked(false);
     setMessage("Свайпай: влево — просто слова, вправо — реальный кейс.");
     setStack([]);
     setShake(false);
@@ -189,6 +191,8 @@ export default function EventPage() {
   };
 
   const swipe = (direction: "left" | "right") => {
+    if (swipeLocked || swipeDone) return;
+    setSwipeLocked(true);
     const card = swipeCards[swipeIndex];
     const correct = (card.side === "case" && direction === "right") || (card.side === "cringe" && direction === "left");
     setMessage(correct ? card.reaction : "Почти. Смысл такой: слова не работают без доказательства.");
@@ -200,7 +204,10 @@ export default function EventPage() {
       setTimeout(() => setMessage("Ты понял базу: кейс сильнее обещаний. Пора собрать свой."), 260);
       return;
     }
-    setTimeout(() => setSwipeIndex((current) => current + 1), 220);
+    setTimeout(() => {
+      setSwipeIndex((current) => current + 1);
+      setSwipeLocked(false);
+    }, 240);
   };
 
   const addLayer = (layer: string, good: boolean) => {
@@ -261,9 +268,11 @@ export default function EventPage() {
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#05030b] text-white">
       <div className="pointer-events-none fixed inset-0">
-        <div className="absolute left-[-20%] top-[-12%] h-72 w-72 rounded-full bg-fuchsia-600/30 blur-3xl" />
-        <div className="absolute right-[-18%] top-[20%] h-80 w-80 rounded-full bg-violet-500/25 blur-3xl" />
-        <div className="absolute bottom-[-16%] left-[18%] h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl" />
+        <div className="absolute left-[-20%] top-[-12%] hidden h-72 w-72 rounded-full bg-fuchsia-600/25 blur-3xl sm:block" />
+        <div className="absolute right-[-18%] top-[20%] hidden h-80 w-80 rounded-full bg-violet-500/20 blur-3xl sm:block" />
+        <div className="absolute bottom-[-16%] left-[18%] hidden h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl sm:block" />
+        <div className="absolute left-[-90px] top-10 h-52 w-52 rounded-full bg-fuchsia-600/18 sm:hidden" />
+        <div className="absolute bottom-0 right-[-110px] h-56 w-56 rounded-full bg-cyan-500/12 sm:hidden" />
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.035)_1px,transparent_1px)] bg-[size:34px_34px] opacity-35" />
       </div>
 
@@ -310,7 +319,8 @@ export default function EventPage() {
 
           {phase === 1 && (
             <Screen key="swipe">
-              <GameTitle kicker="Раунд 1" title="Кринж или кейс?" text="Сортируй карточки. Влево — просто слова. Вправо — доказательство, которое можно показать." />
+              <GameTitle kicker="Раунд 1" title="Кринж или кейс?" text="Твоя задача: отличить пустые обещания от доказательства навыка." />
+              <RuleCard step="Что делать" text="Свайпни карточку или нажми кнопку: «Это слова» для обещаний, «Это кейс» для результата, который можно проверить." />
               <div className="grid flex-1 items-center gap-5 lg:grid-cols-[.95fr_1.05fr]">
                 <div className="mx-auto w-full max-w-sm">
                   <motion.div
@@ -334,8 +344,8 @@ export default function EventPage() {
                     </div>
                   </motion.div>
                   <div className="mt-4 grid grid-cols-2 gap-3">
-                    <SecondaryButton onClick={() => swipe("left")}>Это слова</SecondaryButton>
-                    <SecondaryButton onClick={() => swipe("right")}>Это кейс</SecondaryButton>
+                    <SecondaryButton disabled={swipeLocked || swipeDone} onClick={() => swipe("left")}>Это слова</SecondaryButton>
+                    <SecondaryButton disabled={swipeLocked || swipeDone} onClick={() => swipe("right")}>Это кейс</SecondaryButton>
                   </div>
                 </div>
                 <SidePanel sticker="market" message={message}>
@@ -350,7 +360,8 @@ export default function EventPage() {
 
           {phase === 2 && (
             <Screen key="choice">
-              <GameTitle kicker="Раунд 2" title="Выбери цель и профессию" text="Игре нужен твой маршрут: ради чего ты доказываешь навык и в какой сфере." />
+              <GameTitle kicker="Раунд 2" title="Выбери цель и профессию" text="Теперь игра подстроит миссию под тебя: деньги, работа, портфолио или рост." />
+              <RuleCard step="Что делать" text="Выбери одну цель и одну сферу. Дальше ты будешь собирать кейс именно под этот навык." />
               <div className="grid gap-5 lg:grid-cols-2">
                 <Panel title="Что хочешь получить?">
                   <div className="grid gap-3">
@@ -385,7 +396,8 @@ export default function EventPage() {
 
           {phase === 3 && (
             <Screen key="burger">
-              <GameTitle kicker="Раунд 3" title="Собери кейс-бургер" text="Нажимай только на слои, которые доказывают результат. Мусорные ингредиенты портят кейс." />
+              <GameTitle kicker="Раунд 3" title="Собери кейс-бургер" text="Кейс — это не «я старался». Это навык + задача + правка + результат в Skill ID." />
+              <RuleCard step="Что делать" text="Выбери 4 сильных слоя. Сильный слой можно проверить или показать. Ловушки — это декор, обещания и ошибки." />
               <div className="grid flex-1 items-center gap-5 lg:grid-cols-[.9fr_1.1fr]">
                 <motion.div animate={shake ? { x: [-8, 8, -6, 6, 0] } : { x: 0 }} className="rounded-[34px] border border-white/10 bg-white/[0.055] p-5">
                   <div className="mx-auto flex min-h-[330px] max-w-sm flex-col-reverse justify-center gap-3">
@@ -401,9 +413,11 @@ export default function EventPage() {
                 </motion.div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {[...skill.layers.map((title) => ({ title, good: true })), ...skill.traps.map((title) => ({ title, good: false }))].map((layer) => (
-                    <button key={layer.title} onClick={() => addLayer(layer.title, layer.good)} className="min-h-[86px] rounded-[24px] border border-white/10 bg-white/[0.06] p-4 text-left font-bold transition hover:border-fuchsia-300/45 hover:bg-fuchsia-400/10 active:scale-[0.97]">
-                      {layer.good ? "🧩 " : "🧯 "}
-                      {layer.title}
+                    <button key={layer.title} onClick={() => addLayer(layer.title, layer.good)} disabled={stack.includes(layer.title)} className="min-h-[92px] rounded-[24px] border border-white/10 bg-white/[0.06] p-4 text-left font-bold transition hover:border-fuchsia-300/45 hover:bg-fuchsia-400/10 active:scale-[0.97] disabled:opacity-45">
+                      <span className="mb-2 inline-flex rounded-full bg-white/10 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-white/48">
+                        {layer.good ? "доказательство" : "ловушка"}
+                      </span>
+                      <span className="block">{layer.good ? "🧩 " : "🧯 "}{layer.title}</span>
                     </button>
                   ))}
                 </div>
@@ -419,7 +433,8 @@ export default function EventPage() {
 
           {phase === 4 && (
             <Screen key="fix">
-              <GameTitle kicker="Раунд 4" title="Найди слабое место" text="Перед тобой сырая работа. Тапни туда, где наставник должен дать правку." />
+              <GameTitle kicker="Раунд 4" title="Найди слабое место" text="Сырая работа почти готова, но в ней есть ошибка. Наставник не ругает — он усиливает кейс." />
+              <RuleCard step="Что делать" text={`Тапни подсвеченную проблемную область: ${skill.weakLabel}. Если промахнёшься, игра подскажет.`} />
               <div className="grid flex-1 items-center gap-5 lg:grid-cols-[1.05fr_.95fr]">
                 <motion.div animate={shake ? { x: [-8, 8, -6, 6, 0] } : { x: 0 }} className="relative min-h-[410px] overflow-hidden rounded-[34px] border border-white/12 bg-gradient-to-br from-white/[0.12] to-white/[0.04] p-5">
                   <div className="rounded-[28px] border border-white/12 bg-black/25 p-5">
@@ -436,12 +451,16 @@ export default function EventPage() {
                     </div>
                     <p className="mt-5 text-white/66">{skill.weakSpot}</p>
                   </div>
-                  <button
+                  <motion.button
                     aria-label="Слабое место"
                     onClick={() => tapWork(true)}
-                    className="absolute rounded-[22px] border border-fuchsia-200/50 bg-fuchsia-400/10 shadow-[0_0_40px_rgba(217,70,239,.35)]"
+                    animate={{ scale: [1, 1.04, 1] }}
+                    transition={{ repeat: Infinity, duration: 1.2 }}
+                    className="absolute rounded-[22px] border border-fuchsia-200/70 bg-fuchsia-400/18 shadow-[0_0_40px_rgba(217,70,239,.42)]"
                     style={{ left: skill.hotspot.x, top: skill.hotspot.y, width: skill.hotspot.w, height: skill.hotspot.h }}
-                  />
+                  >
+                    <span className="absolute -top-8 left-0 rounded-full bg-fuchsia-300 px-3 py-1 text-xs font-black text-black">проверь</span>
+                  </motion.button>
                   <button aria-label="Ложная область" onClick={() => tapWork(false)} className="absolute left-[8%] top-[22%] h-20 w-28 rounded-3xl" />
                 </motion.div>
                 <SidePanel sticker="mentor" message={message}>
@@ -460,7 +479,8 @@ export default function EventPage() {
 
           {phase === 5 && (
             <Screen key="boss">
-              <GameTitle kicker="Финальный раунд" title="Босс: «Без опыта не берём»" text="Пробивай босса доказательствами. Тут не работает магия слов, только кейсы." />
+              <GameTitle kicker="Финальный раунд" title="Босс: «Без опыта не берём»" text="Скептик задаёт вопросы. Побеждай не словами, а тем, что ты собрал: кейс, правка, Skill ID." />
+              <RuleCard step="Что делать" text="Выбирай атаку-доказательство, которая отвечает на вопрос босса. Ошибся — ничего страшного, пробуй сильнее." />
               <div className="grid flex-1 items-center gap-5 lg:grid-cols-[.95fr_1.05fr]">
                 <motion.div animate={shake ? { x: [-9, 9, -6, 6, 0] } : { x: 0 }} className="rounded-[36px] border border-red-300/20 bg-gradient-to-br from-red-500/15 to-fuchsia-500/10 p-5 text-center shadow-2xl shadow-red-950/30">
                   <Sticker kind={bossRound >= 3 ? "skill" : "boss"} title={bossRound >= 3 ? "Босс повержен" : "Без опыта не берём"} text={bossRound >= 3 ? "теперь есть доказательство" : bossRounds[bossRound].ask} />
@@ -549,11 +569,25 @@ function PrimaryButton({ children, onClick, disabled, className = "" }: { childr
   );
 }
 
-function SecondaryButton({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
+function SecondaryButton({ children, onClick, disabled }: { children: React.ReactNode; onClick: () => void; disabled?: boolean }) {
   return (
-    <button onClick={onClick} className="min-h-12 rounded-full border border-white/12 bg-white/[0.07] px-4 py-3 text-sm font-black text-white transition hover:border-fuchsia-200/40 active:scale-[0.98]">
+    <button onClick={onClick} disabled={disabled} className="min-h-12 rounded-full border border-white/12 bg-white/[0.07] px-4 py-3 text-sm font-black text-white transition hover:border-fuchsia-200/40 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45">
       {children}
     </button>
+  );
+}
+
+function RuleCard({ step, text }: { step: string; text: string }) {
+  return (
+    <div className="mb-5 rounded-[24px] border border-cyan-200/20 bg-cyan-300/10 p-4">
+      <div className="flex items-start gap-3">
+        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-cyan-200 text-lg font-black text-black">?</div>
+        <div className="min-w-0">
+          <p className="text-sm font-black uppercase tracking-[0.16em] text-cyan-100">{step}</p>
+          <p className="mt-1 break-words text-sm leading-relaxed text-white/72">{text}</p>
+        </div>
+      </div>
+    </div>
   );
 }
 
