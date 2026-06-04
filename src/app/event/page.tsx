@@ -151,6 +151,14 @@ const memeImages = [
   },
 ];
 
+const photoStickers = [
+  { label: "SWAG NPC", src: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f60e.png", fallback: "😎", scale: 0.42 },
+  { label: "CLOWN MODE", src: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f921.png", fallback: "🤡", scale: 0.5 },
+  { label: "COWBOY SKILL", src: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f920.png", fallback: "🤠", scale: 0.52 },
+  { label: "BOT MASK", src: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f978.png", fallback: "🥸", scale: 0.55 },
+  { label: "ALIEN CASE", src: "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f47d.png", fallback: "👽", scale: 0.5 },
+];
+
 export default function EventPage() {
   const reduceMotion = useReducedMotion();
   const [phase, setPhase] = useState<Phase>(0);
@@ -370,10 +378,10 @@ export default function EventPage() {
 
   const spawnRoast = (text: string) => {
     const id = Date.now() + Math.random();
-    setRoasts((items) => [...items.slice(-3), { id, text }]);
+    setRoasts((items) => [...items.slice(-2), { id, text: text.toUpperCase() }]);
     window.setTimeout(() => {
       setRoasts((items) => items.filter((item) => item.id !== id));
-    }, 1900);
+    }, 3000);
   };
 
   const initAudio = () => {
@@ -467,7 +475,7 @@ export default function EventPage() {
     streamRef.current = null;
   };
 
-  const capturePhoto = () => {
+  const capturePhoto = async () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas) return;
@@ -507,6 +515,15 @@ export default function EventPage() {
     ctx.ellipse(cx - width * 0.13, cy - height * 0.02, width * 0.07, height * 0.035, -0.2, 0, Math.PI * 2);
     ctx.ellipse(cx + width * 0.13, cy - height * 0.02, width * 0.07, height * 0.035, 0.2, 0, Math.PI * 2);
     ctx.fill();
+    const sticker = randomPhotoSticker();
+    const stickerSize = width * sticker.scale;
+    try {
+      const stickerImage = await loadImage(sticker.src);
+      ctx.drawImage(stickerImage, cx - stickerSize / 2, cy - height * 0.43, stickerSize, stickerSize);
+    } catch {
+      ctx.font = `${Math.max(72, width / 5)}px sans-serif`;
+      ctx.fillText(sticker.fallback, cx - stickerSize / 3, cy - height * 0.2);
+    }
     ctx.fillStyle = effect.cheekColor;
     ctx.beginPath();
     ctx.ellipse(cx - width * 0.2, cy + height * 0.04, width * 0.09, height * 0.045, -0.2, 0, Math.PI * 2);
@@ -522,7 +539,7 @@ export default function EventPage() {
     ctx.stroke();
     ctx.fillStyle = "rgba(34,211,238,.9)";
     ctx.font = `${Math.max(24, width / 15)}px sans-serif`;
-    ctx.fillText(effect.label, 24, 52);
+    ctx.fillText(`${effect.label} / ${sticker.label}`, 24, 52);
     ctx.fillStyle = "rgba(255,255,255,.9)";
     ctx.fillText("мемный фильтр +100 к вайбу", 24, 92);
     ctx.fillStyle = "white";
@@ -857,9 +874,9 @@ function randomBad(item: string) {
 
 function roast() {
   const lines = [
-    "Фу бот, соберись.",
-    "Лох-момент засчитан.",
-    "Иван Золо бы попал лучше.",
+    "Фу бот, соберись уже.",
+    "Лох-момент официально засчитан.",
+    "Иван Золо бы попал лучше, честно.",
     "Маме такое не показывай, она расстроится.",
     "Мама спросит: это точно мой киберспортсмен?",
     "Ботяра, ты куда нажал?",
@@ -877,8 +894,20 @@ function roast() {
     "Позорный тык, но смешной.",
     "Босс записал тебя в список ботов.",
     "Фу, это было на уровне табуретки.",
+    "Фут, позорный клик.",
+    "Мамкин speedrunner, но без speed.",
+    "Ты сейчас как Wi-Fi у бабушки.",
+    "Даже кнопка обиделась.",
+    "Skill issue, брат.",
+    "Это был не клик, а просьба о помощи.",
+    "Минус аура, плюс мем.",
+    "Ты попал в учебник по промахам.",
   ];
   return lines[Math.floor(Math.random() * lines.length)];
+}
+
+function randomPhotoSticker() {
+  return photoStickers[Math.floor(Math.random() * photoStickers.length)];
 }
 
 function randomPhotoEffect() {
@@ -891,18 +920,28 @@ function randomPhotoEffect() {
   return effects[Math.floor(Math.random() * effects.length)];
 }
 
+function loadImage(src: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = src;
+  });
+}
+
 function RoastBurst({ items }: { items: Array<{ id: number; text: string }> }) {
   return (
-    <div className="pointer-events-none fixed inset-0 z-40 overflow-hidden">
+    <div className="pointer-events-none fixed inset-0 z-[80] overflow-hidden">
       <AnimatePresence>
         {items.map((item, index) => (
           <motion.div
             key={item.id}
-            initial={{ opacity: 0, scale: 0.7, y: 30, rotate: -6 }}
-            animate={{ opacity: 1, scale: 1, y: 0, rotate: index % 2 ? 5 : -5 }}
-            exit={{ opacity: 0, scale: 0.85, y: -40 }}
-            className="absolute rounded-[24px] border border-red-200/50 bg-red-500/90 px-4 py-3 text-sm font-black text-white shadow-[0_0_42px_rgba(239,68,68,.45)]"
-            style={{ left: `${12 + index * 24}%`, top: `${24 + index * 16}%`, maxWidth: 260 }}
+            initial={{ opacity: 0, scale: 0.35, y: 80, rotate: -14 }}
+            animate={{ opacity: 1, scale: [0.35, 1.2, 1], y: 0, rotate: [index % 2 ? 12 : -12, index % 2 ? -5 : 5, 0], x: [0, -12, 12, 0] }}
+            exit={{ opacity: 0, scale: 0.85, y: -70 }}
+            className="absolute rounded-[28px] border-2 border-white/70 bg-red-600 px-5 py-4 text-center text-lg font-black leading-tight text-white shadow-[0_0_70px_rgba(239,68,68,.7)] sm:text-2xl"
+            style={{ left: `${8 + index * 22}%`, top: `${30 + index * 14}%`, maxWidth: 360 }}
           >
             {item.text}
           </motion.div>
