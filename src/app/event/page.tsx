@@ -30,6 +30,8 @@ type Skill = {
   meme: string;
   layers: string[];
   traps: string[];
+  funnyWin: string;
+  funnyFail: string;
   workTitle: string;
   weakSpot: string;
   weakLabel: string;
@@ -53,6 +55,8 @@ const skills: Skill[] = [
     meme: "Код есть. Теперь докажи, что он реально работает.",
     layers: ["Навык: форма заявки", "Задача: страница для клиента", "Правка: проверить отправку", "Skill ID: рабочий кейс"],
     traps: ["Красивый фон без формы", "Мёртвая кнопка", "Ошибка в консоли"],
+    funnyWin: "Форма отправилась. Малый бизнес выдохнул. Консоль молчит, и это красиво.",
+    funnyFail: "Красивая кнопка без действия — это лифт, который открывается в стену.",
     workTitle: "Страница заявки для малого бизнеса",
     weakSpot: "Форма выглядит красиво, но заявка не отправляется.",
     weakLabel: "кнопка молчит",
@@ -67,6 +71,8 @@ const skills: Skill[] = [
     meme: "Красиво — хорошо. Понятно и полезно — уже кейс.",
     layers: ["Навык: визуальная иерархия", "Задача: первый экран сайта", "Правка: усилить CTA", "Skill ID: понятный экран"],
     traps: ["17 шрифтов", "Мелкий текст", "Эффекты ради эффектов"],
+    funnyWin: "Пользователь понял, куда нажать. Где-то один UX-дизайнер тихо улыбнулся.",
+    funnyFail: "17 шрифтов вошли в чат. Смысл вышел из чата.",
     workTitle: "Первый экран сайта",
     weakSpot: "Польза и кнопка потерялись среди декора.",
     weakLabel: "куда нажимать?",
@@ -81,6 +87,8 @@ const skills: Skill[] = [
     meme: "«Вкусно» на словах не считается. Нужна технология и результат.",
     layers: ["Навык: технология блюда", "Задача: позиция для меню", "Правка: описать подачу", "Skill ID: блюдо-кейс"],
     traps: ["Просто «вкусно»", "Нет времени готовки", "Нет состава"],
+    funnyWin: "Теперь блюдо можно повторить, а не просто загадочно нюхать экран.",
+    funnyFail: "«Вкусно» — это эмоция. Заказчик просит рецепт, а не поэму.",
     workTitle: "Блюдо для меню кафе",
     weakSpot: "Блюдо нельзя повторить: нет технологии и подачи.",
     weakLabel: "где технология?",
@@ -95,6 +103,8 @@ const skills: Skill[] = [
     meme: "Объяснить так, чтобы поняли — сильный навык.",
     layers: ["Навык: объяснение темы", "Задача: мини-урок", "Правка: вопрос на понимание", "Skill ID: понятный урок"],
     traps: ["Только термины", "Без примера", "Не проверил понимание"],
+    funnyWin: "Новичок понял тему и не сделал вид. Редкий, но ценный момент.",
+    funnyFail: "Ученик кивнул. Это не победа, это тревожный сигнал.",
     workTitle: "Мини-урок для новичка",
     weakSpot: "Ученик кивнул, но ты не проверил, понял ли он.",
     weakLabel: "кивок опасен",
@@ -109,6 +119,8 @@ const skills: Skill[] = [
     meme: "Слушать, уточнять и не давить — база профессионального общения.",
     layers: ["Навык: уточнение запроса", "Задача: разбор ситуации", "Правка: сохранить границы", "Skill ID: этичный кейс"],
     traps: ["Диагноз за 5 секунд", "Давление мнением", "Совет без запроса"],
+    funnyWin: "Ты сначала понял запрос. Разговор не превратился в шоу «я сейчас всё решу».",
+    funnyFail: "Диагноз за 5 секунд — скорость высокая, профессионализм низкий.",
     workTitle: "Учебная коммуникационная ситуация",
     weakSpot: "Ты слишком быстро даёшь совет, не уточнив запрос.",
     weakLabel: "слишком быстро",
@@ -123,6 +135,8 @@ const skills: Skill[] = [
     meme: "Позиция без фактов — уверенный монолог.",
     layers: ["Навык: правовая логика", "Задача: позиция по ситуации", "Правка: найти основание", "Skill ID: аргументированный кейс"],
     traps: ["Обещать победу", "Игнорировать документы", "Громкий голос"],
+    funnyWin: "Факты на месте, основание найдено. Уверенный монолог стал позицией.",
+    funnyFail: "Громкий голос добавляет децибелы, но не добавляет основания.",
     workTitle: "Учебная правовая позиция",
     weakSpot: "Есть уверенность, но нет фактов и основания.",
     weakLabel: "где основание?",
@@ -213,14 +227,14 @@ export default function EventPage() {
   const addLayer = (layer: string, good: boolean) => {
     if (!good) {
       setShake(true);
-      setMessage("Это выглядит как шум. В кейс идёт только то, что доказывает результат.");
+      setMessage(skill.funnyFail);
       setTimeout(() => setShake(false), 420);
       return;
     }
     if (stack.includes(layer)) return;
     setStack((current) => [...current, layer]);
     addStats(7, 12, 4);
-    setMessage(stack.length + 1 >= skill.layers.length ? "Кейс-бургер собран. Теперь наставник найдёт слабое место." : "Хороший слой. Кейс становится убедительнее.");
+    setMessage(stack.length + 1 >= skill.layers.length ? "Кейс-бургер собран. Теперь наставник найдёт слабое место." : skill.funnyWin);
   };
 
   const tapWork = (hit: boolean) => {
@@ -397,7 +411,7 @@ export default function EventPage() {
           {phase === 3 && (
             <Screen key="burger">
               <GameTitle kicker="Раунд 3" title="Собери кейс-бургер" text="Кейс — это не «я старался». Это навык + задача + правка + результат в Skill ID." />
-              <RuleCard step="Что делать" text="Выбери 4 сильных слоя. Сильный слой можно проверить или показать. Ловушки — это декор, обещания и ошибки." />
+              <RuleCard step="Что делать" text="Перед тобой 7 ингредиентов. Выбери 4, которые реально убедят заказчика или работодателя. Ошибёшься — рынок отреагирует." />
               <div className="grid flex-1 items-center gap-5 lg:grid-cols-[.9fr_1.1fr]">
                 <motion.div animate={shake ? { x: [-8, 8, -6, 6, 0] } : { x: 0 }} className="rounded-[34px] border border-white/10 bg-white/[0.055] p-5">
                   <div className="mx-auto flex min-h-[330px] max-w-sm flex-col-reverse justify-center gap-3">
@@ -412,12 +426,12 @@ export default function EventPage() {
                   <p className="mt-4 text-center text-sm text-white/58">{message}</p>
                 </motion.div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {[...skill.layers.map((title) => ({ title, good: true })), ...skill.traps.map((title) => ({ title, good: false }))].map((layer) => (
+                  {[...skill.layers.map((title) => ({ title, good: true })), ...skill.traps.map((title) => ({ title, good: false }))].map((layer, index) => (
                     <button key={layer.title} onClick={() => addLayer(layer.title, layer.good)} disabled={stack.includes(layer.title)} className="min-h-[92px] rounded-[24px] border border-white/10 bg-white/[0.06] p-4 text-left font-bold transition hover:border-fuchsia-300/45 hover:bg-fuchsia-400/10 active:scale-[0.97] disabled:opacity-45">
                       <span className="mb-2 inline-flex rounded-full bg-white/10 px-2 py-1 text-[10px] uppercase tracking-[0.14em] text-white/48">
-                        {layer.good ? "доказательство" : "ловушка"}
+                        ингредиент #{index + 1}
                       </span>
-                      <span className="block">{layer.good ? "🧩 " : "🧯 "}{layer.title}</span>
+                      <span className="block">🍔 {layer.title}</span>
                     </button>
                   ))}
                 </div>
