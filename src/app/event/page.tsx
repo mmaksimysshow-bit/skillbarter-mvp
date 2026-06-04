@@ -130,6 +130,24 @@ const skills: Skill[] = [
 
 const goals = ["Заказы", "Работа", "Портфолио", "Рост"];
 
+const memeImages = [
+  {
+    title: "рынок смотрит",
+    src: "https://commons.wikimedia.org/wiki/Special:FilePath/Get_a_load_of_this_guy_(meme).jpg",
+    caption: "когда вместо кейса снова «я умею»",
+  },
+  {
+    title: "босс злится",
+    src: "https://commons.wikimedia.org/wiki/Special:FilePath/Rage_face.png",
+    caption: "без пруфов он не пропускает",
+  },
+  {
+    title: "live reaction",
+    src: "https://commons.wikimedia.org/wiki/Special:FilePath/Live_Reaction_meme_template.png",
+    caption: "работодатель увидел Skill ID",
+  },
+];
+
 export default function EventPage() {
   const reduceMotion = useReducedMotion();
   const [phase, setPhase] = useState<Phase>(0);
@@ -145,10 +163,12 @@ export default function EventPage() {
   const [screamer, setScreamer] = useState(false);
   const [bossHp, setBossHp] = useState(100);
   const [bar, setBar] = useState(0);
-  const [dir, setDir] = useState(1);
   const [message, setMessage] = useState("Собери навык, докажи его кейсом и выбей возможность.");
   const [shared, setShared] = useState(false);
   const barRef = useRef(0);
+  const barDirectionRef = useRef(1);
+  const audioRef = useRef<AudioContext | null>(null);
+  const musicRef = useRef<{ osc: OscillatorNode; gain: GainNode } | null>(null);
 
   const skill = useMemo(() => skills.find((item) => item.id === skillId) ?? skills[0], [skillId]);
   const requiredProofs = Math.min(4, skill.proof.length);
@@ -176,23 +196,29 @@ export default function EventPage() {
 
   useEffect(() => {
     if (phase !== 4 || bossHp <= 0) return;
-    const timer = window.setInterval(() => {
+    let raf = 0;
+    let last = performance.now();
+    const tick = (now: number) => {
+      const delta = Math.min(32, now - last);
+      last = now;
       setBar((value) => {
-        let next = value + dir * 6;
+        let next = value + barDirectionRef.current * delta * 0.12;
         if (next >= 100) {
           next = 100;
-          setDir(-1);
+          barDirectionRef.current = -1;
         }
         if (next <= 0) {
           next = 0;
-          setDir(1);
+          barDirectionRef.current = 1;
         }
         barRef.current = next;
         return next;
       });
-    }, 44);
-    return () => window.clearInterval(timer);
-  }, [phase, dir, bossHp]);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [phase, bossHp]);
 
   const restart = () => {
     setPhase(0);
@@ -209,12 +235,15 @@ export default function EventPage() {
     setBossHp(100);
     setBar(0);
     barRef.current = 0;
-    setDir(1);
+    barDirectionRef.current = 1;
     setMessage("Собери навык, докажи его кейсом и выбей возможность.");
     setShared(false);
   };
 
   const startGame = () => {
+    initAudio();
+    startMusic();
+    playTone(540, 0.08, "triangle", 0.06);
     setMessage("Выбери цель и сферу. Потом игра начнётся.");
     setPhase(1);
   };
@@ -223,16 +252,20 @@ export default function EventPage() {
     const good = skill.proof.includes(item);
     if (!good) {
       setMisses((value) => value + 1);
-      setMessage(randomBad(item));
+      setCaught([]);
+      setMessage(`${randomBad(item)} Раунд сброшен: собери пруфы заново.`);
+      playError();
       if (typeof navigator !== "undefined") navigator.vibrate?.(22);
       return;
     }
     if (caught.includes(item)) return;
     setCaught((value) => [...value, item]);
     setMessage(randomGood(item));
+    playClick();
     if (caught.length + 1 >= requiredProofs) {
       setTimeout(() => {
         setScreamer(true);
+        playScreamer();
         if (typeof navigator !== "undefined") navigator.vibrate?.([30, 20, 30]);
       }, 550);
       setTimeout(() => {
@@ -255,7 +288,10 @@ export default function EventPage() {
     if (!correct) {
       setRepairMistakes((value) => value + 1);
       setMisses((value) => value + 1);
-      setMessage(`Наставник: не то. «${repair}» звучит активно, но проблему «${selectedSpot}» не чинит.`);
+      setFixed([]);
+      setSelectedSpot(null);
+      setMessage(`Наставник: не то. «${repair}» проблему не чинит. Ремонт сброшен к нулю.`);
+      playError();
       if (typeof navigator !== "undefined") navigator.vibrate?.(18);
       return;
     }
@@ -263,6 +299,7 @@ export default function EventPage() {
     setFixed((value) => [...value, repairedSpot]);
     setSelectedSpot(null);
     setMessage(`Правка принята: ${repair}. ${skill.mentor}`);
+    playSuccess();
     if (fixed.length + 1 >= 3) {
       setTimeout(() => {
         setMessage("Кейс отремонтирован. Остался босс «без опыта не берём».");
@@ -276,8 +313,12 @@ export default function EventPage() {
     const perfect = currentBar >= 49 && currentBar <= 52;
     if (!perfect) {
       setMisses((value) => value + 1);
-      setBossHp((hp) => Math.min(100, hp + 4));
-      setMessage(`Промах (${Math.round(currentBar)}%). Босс не засчитал: цель — белая линия в центре.`);
+      setBossHp(100);
+      setBar(0);
+      barRef.current = 0;
+      barDirectionRef.current = 1;
+      setMessage(`Промах (${Math.round(currentBar)}%). Босс полностью восстановился: бей только по белой линии.`);
+      playError();
       if (typeof navigator !== "undefined") navigator.vibrate?.(25);
       return;
     }
@@ -287,6 +328,54 @@ export default function EventPage() {
       return next;
     });
     setMessage("Чистое попадание. Кейс ударил прямо по фразе «без опыта не берём».");
+    playSuccess();
+  };
+
+  const initAudio = () => {
+    if (audioRef.current || typeof window === "undefined") return;
+    const AudioCtor = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtor) return;
+    audioRef.current = new AudioCtor();
+  };
+
+  const playTone = (frequency: number, duration = 0.08, type: OscillatorType = "sine", volume = 0.04) => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const osc = audio.createOscillator();
+    const gain = audio.createGain();
+    osc.type = type;
+    osc.frequency.value = frequency;
+    gain.gain.setValueAtTime(volume, audio.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audio.destination);
+    osc.start();
+    osc.stop(audio.currentTime + duration);
+  };
+
+  const playClick = () => playTone(720, 0.06, "square", 0.035);
+  const playSuccess = () => {
+    playTone(620, 0.08, "triangle", 0.04);
+    window.setTimeout(() => playTone(930, 0.1, "triangle", 0.035), 80);
+  };
+  const playError = () => playTone(120, 0.16, "sawtooth", 0.055);
+  const playScreamer = () => {
+    playTone(80, 0.12, "sawtooth", 0.08);
+    window.setTimeout(() => playTone(980, 0.18, "square", 0.075), 90);
+  };
+
+  const startMusic = () => {
+    const audio = audioRef.current;
+    if (!audio || musicRef.current) return;
+    const osc = audio.createOscillator();
+    const gain = audio.createGain();
+    osc.type = "sawtooth";
+    osc.frequency.value = 52;
+    gain.gain.value = 0.012;
+    osc.connect(gain);
+    gain.connect(audio.destination);
+    osc.start();
+    musicRef.current = { osc, gain };
   };
 
   const shareQuest = async () => {
@@ -343,6 +432,7 @@ export default function EventPage() {
                     <Meme title="Кейс с правкой" face="👀" text="работодатель проснулся" />
                     <Meme title="Skill ID" face="⚡" text="теперь есть что показать" />
                   </div>
+                  <InternetMemeWall />
                   <Primary className="mt-6 w-full sm:w-auto" onClick={startGame}>
                     Влететь в рейд <ArrowRight size={18} />
                   </Primary>
@@ -415,8 +505,8 @@ export default function EventPage() {
                       disabled={caught.includes(item)}
                       className="absolute rounded-[24px] border border-white/12 bg-black/55 px-4 py-3 text-left text-sm font-black shadow-xl shadow-black/30 transition active:scale-[0.94] disabled:opacity-35"
                       style={{ left: `${8 + ((index * 31) % 64)}%`, top: `${8 + ((index * 19) % 72)}%`, maxWidth: "190px" }}
-                      animate={{ y: reduceMotion ? 0 : [0, index % 2 ? 18 : -18, 0], rotate: reduceMotion ? 0 : [0, index % 2 ? 2 : -2, 0] }}
-                      transition={{ duration: 2.4 + (index % 3) * 0.35, repeat: Infinity }}
+                      animate={{ y: reduceMotion ? 0 : [0, index % 2 ? 42 : -42, 0], x: reduceMotion ? 0 : [0, index % 2 ? -24 : 24, 0], rotate: reduceMotion ? 0 : [0, index % 2 ? 5 : -5, 0] }}
+                      transition={{ duration: 1.25 + (index % 3) * 0.18, repeat: Infinity, ease: "easeInOut" }}
                     >
                       {caught.includes(item) ? "✅ " : "🎯 "}
                       {item}
@@ -457,8 +547,8 @@ export default function EventPage() {
                       disabled={fixed.includes(spot)}
                       className={`absolute rounded-[24px] border px-3 py-2 text-xs font-black shadow-[0_0_34px_rgba(251,191,36,.28)] disabled:border-emerald-200/60 disabled:bg-emerald-400/18 ${selectedSpot === spot ? "border-fuchsia-200 bg-fuchsia-400/25 text-fuchsia-50" : "border-amber-200/70 bg-amber-300/18 text-amber-50"}`}
                       style={{ left: `${14 + index * 25}%`, top: `${34 + (index % 2) * 28}%` }}
-                      animate={{ scale: fixed.includes(spot) ? 1 : [1, 1.06, 1] }}
-                      transition={{ repeat: fixed.includes(spot) ? 0 : Infinity, duration: 1 }}
+                      animate={fixed.includes(spot) ? { scale: 1, x: 0, y: 0 } : { scale: [1, 1.08, 1], x: [0, index % 2 ? 86 : -72, index % 2 ? -54 : 68, 0], y: [0, index % 2 ? -58 : 62, index % 2 ? 64 : -48, 0] }}
+                      transition={{ repeat: fixed.includes(spot) ? 0 : Infinity, duration: 1.35 + index * 0.12, ease: "easeInOut" }}
                     >
                       {fixed.includes(spot) ? "починено" : selectedSpot === spot ? "выбрано" : "сломано"}: {spot}
                     </motion.button>
@@ -663,6 +753,24 @@ function Meme({ title, face, text }: { title: string; face: string; text: string
   );
 }
 
+function InternetMemeWall() {
+  return (
+    <div className="mt-5 grid gap-3 sm:grid-cols-3">
+      {memeImages.map((meme, index) => (
+        <motion.div key={meme.title} initial={{ opacity: 0, y: 12, rotate: index % 2 ? 2 : -2 }} animate={{ opacity: 1, y: 0, rotate: index % 2 ? -1 : 1 }} transition={{ delay: index * 0.08 }} className="overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.06]">
+          <div className="h-24 bg-black/40">
+            <img src={meme.src} alt={meme.title} className="h-full w-full object-contain p-2" loading="lazy" referrerPolicy="no-referrer" />
+          </div>
+          <div className="p-3">
+            <p className="text-sm font-black">{meme.title}</p>
+            <p className="mt-1 text-xs text-white/58">{meme.caption}</p>
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
 function Meter({ label, value }: { label: string; value: number }) {
   return (
     <div>
@@ -679,10 +787,10 @@ function Meter({ label, value }: { label: string; value: number }) {
 
 function Screamer() {
   return (
-    <motion.div className="fixed inset-0 z-50 grid place-items-center bg-black/82 p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-      <motion.div initial={{ scale: 0.35, rotate: -8 }} animate={{ scale: [0.35, 1.18, 1], rotate: [-8, 4, 0] }} className="max-w-sm rounded-[36px] border border-red-300/40 bg-red-500/20 p-6 text-center shadow-[0_0_80px_rgba(239,68,68,.45)]">
-        <div className="text-8xl">😳</div>
-        <h2 className="mt-3 text-3xl font-black">РАБОТОДАТЕЛЬ JUMPSCARE</h2>
+    <motion.div className="fixed inset-0 z-50 grid place-items-center bg-red-950/90 p-4" initial={{ opacity: 0 }} animate={{ opacity: [0, 1, 0.92, 1] }} exit={{ opacity: 0 }}>
+      <motion.div initial={{ scale: 0.08, rotate: -18 }} animate={{ scale: [0.08, 1.35, 0.92, 1.08], rotate: [-18, 10, -4, 0] }} transition={{ duration: 0.32 }} className="max-w-sm rounded-[36px] border border-red-200/70 bg-black p-6 text-center shadow-[0_0_120px_rgba(239,68,68,.8)]">
+        <motion.div className="text-8xl" animate={{ scale: [1, 1.25, 1], rotate: [-4, 4, -4] }} transition={{ repeat: Infinity, duration: 0.16 }}>😳</motion.div>
+        <h2 className="mt-3 text-3xl font-black text-red-100">РАБОТОДАТЕЛЬ!</h2>
         <p className="mt-2 text-white/76">«А где кейс посмотреть?»</p>
       </motion.div>
     </motion.div>
