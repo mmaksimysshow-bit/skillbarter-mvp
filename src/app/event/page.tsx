@@ -181,6 +181,7 @@ export default function EventPage() {
   const shakeRef = useRef<HTMLAudioElement | null>(null);
   const lastShakeRef = useRef(0);
   const clapTimeoutRef = useRef<number | null>(null);
+  const musicFadeRef = useRef<number | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -196,6 +197,7 @@ export default function EventPage() {
   useEffect(() => {
     return () => {
       if (clapTimeoutRef.current) window.clearTimeout(clapTimeoutRef.current);
+      if (musicFadeRef.current) cancelAnimationFrame(musicFadeRef.current);
       stopMusic();
       stopCamera();
     };
@@ -453,6 +455,24 @@ export default function EventPage() {
     window.setTimeout(() => playTone(980, 0.18, "square", 0.075), 90);
   };
 
+  const fadeMusicVolume = (target: number, duration = 260) => {
+    const music = musicRef.current;
+    if (!music) return;
+    if (musicFadeRef.current) cancelAnimationFrame(musicFadeRef.current);
+    const start = music.volume;
+    const startedAt = performance.now();
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - startedAt) / duration);
+      music.volume = start + (target - start) * progress;
+      if (progress < 1) {
+        musicFadeRef.current = requestAnimationFrame(tick);
+      } else {
+        musicFadeRef.current = null;
+      }
+    };
+    musicFadeRef.current = requestAnimationFrame(tick);
+  };
+
   const playShake67 = () => {
     const sound = shakeRef.current;
     if (sound) {
@@ -470,17 +490,22 @@ export default function EventPage() {
   const triggerClapMode = () => {
     if (clapTimeoutRef.current) window.clearTimeout(clapTimeoutRef.current);
     setClapMode(true);
+    fadeMusicVolume(0.015, 180);
     if (typeof navigator !== "undefined") navigator.vibrate?.([45, 25, 45, 25, 85]);
     const sound = shakeRef.current;
+    const closeClapMode = () => {
+      setClapMode(false);
+      fadeMusicVolume(0.13, 420);
+    };
     if (sound) {
-      sound.onended = () => setClapMode(false);
+      sound.onended = closeClapMode;
       playShake67();
       const duration = Number.isFinite(sound.duration) && sound.duration > 0 ? sound.duration * 1000 + 180 : 4200;
-      clapTimeoutRef.current = window.setTimeout(() => setClapMode(false), duration);
+      clapTimeoutRef.current = window.setTimeout(closeClapMode, duration);
       return;
     }
     playShake67();
-    clapTimeoutRef.current = window.setTimeout(() => setClapMode(false), 4200);
+    clapTimeoutRef.current = window.setTimeout(closeClapMode, 4200);
   };
 
   const enableShakeMode = async (showFeedback = true) => {
