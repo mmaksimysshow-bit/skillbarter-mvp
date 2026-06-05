@@ -167,7 +167,6 @@ export default function EventPage() {
   const [bossHp, setBossHp] = useState(100);
   const [bar, setBar] = useState(0);
   const [message, setMessage] = useState("Собери навык, докажи его кейсом и выбей возможность.");
-  const [shared, setShared] = useState(false);
   const [surrendered, setSurrendered] = useState(false);
   const [photo, setPhoto] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState("");
@@ -255,7 +254,6 @@ export default function EventPage() {
     barRef.current = 0;
     barDirectionRef.current = 1;
     setMessage("Собери навык, докажи его кейсом и выбей возможность.");
-    setShared(false);
     setSurrendered(false);
     setPhoto(null);
     setCameraError("");
@@ -485,21 +483,6 @@ export default function EventPage() {
     setPhoto(canvas.toDataURL("image/png"));
     stopCamera();
     playSuccess();
-  };
-
-  const shareQuest = async () => {
-    setShared(true);
-    if (typeof navigator !== "undefined" && "share" in navigator) {
-      try {
-        await navigator.share({
-          title: "Skill ID Rush",
-          text: "Я выбил Skill ID в мини-игре SkillBarter.",
-          url: "https://skillbarter-mvp-bh44.vercel.app/event",
-        });
-      } catch {
-        setShared(true);
-      }
-    }
   };
 
   return (
@@ -776,10 +759,9 @@ export default function EventPage() {
                   <p className="mt-5 rounded-[24px] border border-white/10 bg-black/20 p-4 text-sm leading-relaxed text-white/72">
                     SkillBarter это проект где вы сможете зарабатывать, учиться и получить работу проще, выполняя настоящие задачи. Ты проходишь уроки, делаешь реальные задания, получаешь правки наставников и собираешь Skill ID. Так навык превращается в кейс, кейс — в доверие, а доверие — в возможность.
                   </p>
-                  <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
                     <Link href="/access" className="inline-flex min-h-12 items-center justify-center rounded-full bg-white px-4 py-3 text-sm font-black text-black">Открыть MVP</Link>
                     <Secondary onClick={restart}><RefreshCcw size={16} /> Ещё раз</Secondary>
-                    <Secondary onClick={shareQuest}>{shared ? "Ссылка готова" : "Показать другу"}</Secondary>
                   </div>
                 </div>
               </div>
