@@ -182,6 +182,7 @@ export default function EventPage() {
   const lastShakeRef = useRef(0);
   const clapTimeoutRef = useRef<number | null>(null);
   const musicFadeRef = useRef<number | null>(null);
+  const vibrationLoopRef = useRef<number | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -198,6 +199,8 @@ export default function EventPage() {
     return () => {
       if (clapTimeoutRef.current) window.clearTimeout(clapTimeoutRef.current);
       if (musicFadeRef.current) cancelAnimationFrame(musicFadeRef.current);
+      if (vibrationLoopRef.current) window.clearInterval(vibrationLoopRef.current);
+      if (typeof navigator !== "undefined") navigator.vibrate?.(0);
       stopMusic();
       stopCamera();
     };
@@ -473,6 +476,24 @@ export default function EventPage() {
     musicFadeRef.current = requestAnimationFrame(tick);
   };
 
+  const stopStrongVibration = () => {
+    if (vibrationLoopRef.current) {
+      window.clearInterval(vibrationLoopRef.current);
+      vibrationLoopRef.current = null;
+    }
+    if (typeof navigator !== "undefined") navigator.vibrate?.(0);
+  };
+
+  const startStrongVibration = () => {
+    if (typeof navigator === "undefined" || !navigator.vibrate) return;
+    stopStrongVibration();
+    const pattern = [180, 45, 180, 45, 260, 60];
+    navigator.vibrate(pattern);
+    vibrationLoopRef.current = window.setInterval(() => {
+      navigator.vibrate(pattern);
+    }, 770);
+  };
+
   const playShake67 = () => {
     const sound = shakeRef.current;
     if (sound) {
@@ -491,10 +512,11 @@ export default function EventPage() {
     if (clapTimeoutRef.current) window.clearTimeout(clapTimeoutRef.current);
     setClapMode(true);
     fadeMusicVolume(0.015, 180);
-    if (typeof navigator !== "undefined") navigator.vibrate?.([45, 25, 45, 25, 85]);
+    startStrongVibration();
     const sound = shakeRef.current;
     const closeClapMode = () => {
       setClapMode(false);
+      stopStrongVibration();
       fadeMusicVolume(0.13, 420);
     };
     if (sound) {
