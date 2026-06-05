@@ -171,7 +171,7 @@ export default function EventPage() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState("");
   const [roasts, setRoasts] = useState<Array<{ id: number; text: string }>>([]);
-  const [shakeReady, setShakeReady] = useState(false);
+  const [shakeReady, setShakeReady] = useState(true);
   const [clapMode, setClapMode] = useState(false);
   const barRef = useRef(0);
   const barDirectionRef = useRef(1);
@@ -180,6 +180,7 @@ export default function EventPage() {
   const fartRef = useRef<HTMLAudioElement | null>(null);
   const shakeRef = useRef<HTMLAudioElement | null>(null);
   const lastShakeRef = useRef(0);
+  const clapTimeoutRef = useRef<number | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -194,6 +195,7 @@ export default function EventPage() {
 
   useEffect(() => {
     return () => {
+      if (clapTimeoutRef.current) window.clearTimeout(clapTimeoutRef.current);
       stopMusic();
       stopCamera();
     };
@@ -288,6 +290,7 @@ export default function EventPage() {
   const startGame = () => {
     initAudio();
     startMusic();
+    void enableShakeMode(false);
     playTone(540, 0.08, "triangle", 0.06);
     setMessage("Выбери цель и сферу. Потом игра начнётся.");
     setPhase(1);
@@ -454,7 +457,8 @@ export default function EventPage() {
     const sound = shakeRef.current;
     if (sound) {
       sound.currentTime = 0;
-      void sound.play().catch(() => {
+      const playback = sound.play();
+      if (playback) void playback.catch(() => {
         playTone(67, 0.22, "sawtooth", 0.08);
         window.setTimeout(() => playTone(134, 0.18, "square", 0.05), 120);
       });
@@ -464,13 +468,22 @@ export default function EventPage() {
   };
 
   const triggerClapMode = () => {
+    if (clapTimeoutRef.current) window.clearTimeout(clapTimeoutRef.current);
     setClapMode(true);
-    playShake67();
     if (typeof navigator !== "undefined") navigator.vibrate?.([45, 25, 45, 25, 85]);
-    window.setTimeout(() => setClapMode(false), 1350);
+    const sound = shakeRef.current;
+    if (sound) {
+      sound.onended = () => setClapMode(false);
+      playShake67();
+      const duration = Number.isFinite(sound.duration) && sound.duration > 0 ? sound.duration * 1000 + 180 : 4200;
+      clapTimeoutRef.current = window.setTimeout(() => setClapMode(false), duration);
+      return;
+    }
+    playShake67();
+    clapTimeoutRef.current = window.setTimeout(() => setClapMode(false), 4200);
   };
 
-  const enableShakeMode = async () => {
+  const enableShakeMode = async (showFeedback = true) => {
     initAudio();
     if (typeof window === "undefined") return;
     const MotionEventWithPermission = window.DeviceMotionEvent as typeof DeviceMotionEvent & {
@@ -485,10 +498,12 @@ export default function EventPage() {
         }
       }
       setShakeReady(true);
-      setMessage("67-режим включён. Теперь потряси телефон: ладони выйдут на сцену.");
-      triggerClapMode();
+      if (showFeedback) {
+        setMessage("67-режим включён. Теперь потряси телефон: ладони выйдут на сцену.");
+        triggerClapMode();
+      }
     } catch {
-      setMessage("67-режим не включился. На iPhone иногда нужно разрешить движение в Safari.");
+      if (showFeedback) setMessage("67-режим не включился. На iPhone иногда нужно разрешить движение в Safari.");
     }
   };
 
@@ -571,16 +586,7 @@ export default function EventPage() {
               <p className="text-xs font-black uppercase tracking-[0.28em] text-fuchsia-200">Skill ID Rush</p>
               <p className="truncate text-sm text-white/60">мини-игра: навык → кейс → доверие → возможность</p>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <button
-                type="button"
-                onClick={enableShakeMode}
-                className={`min-h-9 rounded-full border px-3 py-2 text-xs font-black transition active:scale-[0.96] ${shakeReady ? "border-emerald-300/40 bg-emerald-400/15 text-emerald-100" : "border-cyan-300/30 bg-cyan-400/10 text-cyan-100"}`}
-              >
-                {shakeReady ? "67 ON" : "67 shake"}
-              </button>
-              <div className="rounded-full border border-fuchsia-300/30 bg-fuchsia-400/10 px-3 py-2 text-xs font-black text-fuchsia-100">{phase + 1}/6</div>
-            </div>
+            <div className="rounded-full border border-fuchsia-300/30 bg-fuchsia-400/10 px-3 py-2 text-xs font-black text-fuchsia-100">{phase + 1}/6</div>
           </div>
           <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
             <motion.div className="h-full rounded-full bg-gradient-to-r from-fuchsia-400 via-violet-300 to-cyan-300" animate={{ width: `${((phase + 1) / 6) * 100}%` }} transition={{ duration: reduceMotion ? 0 : 0.4 }} />
@@ -963,7 +969,7 @@ function Clap67Overlay() {
         className="absolute text-[34vw] font-black leading-none text-fuchsia-300/18 sm:text-[220px]"
         initial={{ scale: 0.4, rotate: -8, opacity: 0 }}
         animate={{ scale: [0.7, 1.2, 1], rotate: [-8, 5, 0], opacity: [0, 1, 0.55] }}
-        transition={{ duration: 1.1, ease: "easeOut" }}
+        transition={{ duration: 0.9, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }}
       >
         67
       </motion.div>
@@ -972,7 +978,7 @@ function Clap67Overlay() {
           className="absolute left-[8%] top-[18%] grid h-36 w-36 place-items-center rounded-[38px] border border-fuchsia-200/40 bg-fuchsia-400/18 text-7xl shadow-[0_0_55px_rgba(217,70,239,.45)] sm:h-44 sm:w-44 sm:text-8xl"
           initial={{ x: -180, y: 120, rotate: -28, scale: 0.7 }}
           animate={{ x: [0, 92, 12, 118], y: [90, -32, 28, -68], rotate: [-24, 18, -10, 20], scale: [0.85, 1.12, 0.96, 1.16] }}
-          transition={{ duration: 1.15, ease: "easeInOut" }}
+          transition={{ duration: 0.72, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }}
         >
           🫲
         </motion.div>
@@ -980,7 +986,7 @@ function Clap67Overlay() {
           className="absolute right-[8%] bottom-[18%] grid h-36 w-36 place-items-center rounded-[38px] border border-cyan-200/40 bg-cyan-400/18 text-7xl shadow-[0_0_55px_rgba(34,211,238,.45)] sm:h-44 sm:w-44 sm:text-8xl"
           initial={{ x: 180, y: -120, rotate: 28, scale: 0.7 }}
           animate={{ x: [0, -92, -12, -118], y: [-90, 32, -28, 68], rotate: [24, -18, 10, -20], scale: [0.85, 1.12, 0.96, 1.16] }}
-          transition={{ duration: 1.15, ease: "easeInOut" }}
+          transition={{ duration: 0.72, repeat: Infinity, repeatType: "mirror", ease: "easeInOut" }}
         >
           🫱
         </motion.div>
@@ -988,7 +994,7 @@ function Clap67Overlay() {
           className="absolute left-1/2 top-1/2 rounded-full border border-white/20 bg-white px-5 py-3 text-2xl font-black text-black shadow-[0_0_44px_rgba(255,255,255,.55)]"
           initial={{ x: "-50%", y: "-50%", scale: 0, rotate: -14 }}
           animate={{ x: "-50%", y: "-50%", scale: [0, 1.22, 1], rotate: [-14, 8, 0] }}
-          transition={{ delay: 0.28, duration: 0.35 }}
+          transition={{ delay: 0.18, duration: 0.5, repeat: Infinity, repeatType: "mirror" }}
         >
           CLAP 67
         </motion.div>
